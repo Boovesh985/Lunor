@@ -45,7 +45,8 @@ function ExportMenu() {
         <Download className="size-3.5" /> <span className="hidden md:inline">Export</span>
       </Button>
       {open && (
-        <div className="absolute right-0 top-10 z-50 w-72 rounded-xl border border-line bg-card p-1.5 shadow-2xl">
+        // On phones the button sits mid-header, so the menu spans the screen instead of hanging off its left edge.
+        <div className="fixed inset-x-3 top-14 z-50 rounded-xl border border-line bg-card p-1.5 shadow-2xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-10 sm:w-72">
           <button
             type="button"
             disabled={busy}

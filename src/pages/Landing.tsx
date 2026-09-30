@@ -248,7 +248,9 @@ export function Landing() {
 
   useEffect(() => {
     document.title = 'Lunor App Studio — Build apps. Understand every line.';
-    if (location.hash) document.querySelector(location.hash)?.scrollIntoView({ behavior: 'smooth' });
+    // Arriving at /#demos (e.g. from "Try an instant demo"): jump straight to that section.
+    // (getElementById, not querySelector: a hash like "#123" isn't a valid selector and would throw.)
+    if (location.hash) document.getElementById(location.hash.slice(1))?.scrollIntoView();
   }, []);
 
   return (
