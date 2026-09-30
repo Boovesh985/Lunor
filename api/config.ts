@@ -1,5 +1,5 @@
-import { resolveModel } from '../server/claude.ts';
-import { chooseProvider, modelFor } from '../server/providers.ts';
+import { resolveModel } from '../server/claude.js';
+import { chooseProvider, modelFor } from '../server/providers.js';
 
 /** Tells the UI whether live AI is available on this deployment, and on which model (never exposes a key). */
 export default {

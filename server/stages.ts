@@ -6,7 +6,7 @@
 import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod';
 import type { BetaJSONOutputFormat, BetaMessageParam } from '@anthropic-ai/sdk/resources/beta/messages/messages';
 import type { z } from 'zod';
-import { toFileBlocks, withLineNumbers } from '../shared/fileProtocol.ts';
+import { toFileBlocks, withLineNumbers } from '../shared/fileProtocol.js';
 import {
   BuildRequestSchema,
   ChatRequestSchema,
@@ -24,9 +24,9 @@ import {
   type LearnRequest,
   type PlanRequest,
   type UnderstandRequest,
-} from '../shared/schemas.ts';
-import type { Effort } from './claude.ts';
-import { BUILD_SYSTEM, CHAT_SYSTEM, EXPLAIN_SYSTEM, LEARN_SYSTEM, PLAN_SYSTEM, UNDERSTAND_SYSTEM, levelLine } from './prompts.ts';
+} from '../shared/schemas.js';
+import type { Effort } from './claude.js';
+import { BUILD_SYSTEM, CHAT_SYSTEM, EXPLAIN_SYSTEM, LEARN_SYSTEM, PLAN_SYSTEM, UNDERSTAND_SYSTEM, levelLine } from './prompts.js';
 
 export type StageName = 'understand' | 'plan' | 'build' | 'explain' | 'learn' | 'chat';
 

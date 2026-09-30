@@ -16,7 +16,7 @@ Lunor App Studio is a working prototype of an AI-powered **App Development** too
 
 ![Lunor App Studio landing page](docs/screenshots/landing.jpg)
 
-**Live demo:** _add your Vercel URL here after deploying (see [Deploy](#deploy-to-vercel))_
+**Live demo:** [lunor-app-studio.vercel.app](https://lunor-app-studio.vercel.app)
 
 ---
 
@@ -226,7 +226,7 @@ Other scripts:
 
 ## Tests
 
-`npm test` runs 90 tests covering:
+`npm test` runs 91 tests covering:
 
 - the streaming `<file>` protocol parser;
 - anchor-based line resolution;
@@ -234,6 +234,7 @@ Other scripts:
 - the in-browser compiler;
 - Mermaid generation and escaping;
 - the HTTP handler: validation errors, no-key response, schema-valid mock streaming, and resuming an interrupted build;
+- the API's local imports, which must use `.js` extensions or every Vercel function crashes at startup;
 - provider choice and the Gemini adapter: request mapping, error codes, model failover (including answers cut off mid-stream and stalled connections) and the client's `restart` handling;
 - the Expo ZIP export and the Snack payload;
 - **sample integrity**: every demo document passes its schema, every file is planned and explained, every concept exists in the Lunor taxonomy, and every line reference lands on its anchor;

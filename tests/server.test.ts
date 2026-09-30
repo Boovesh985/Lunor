@@ -1,3 +1,5 @@
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { parseFileBlocks } from '../shared/fileProtocol.ts';
 import { UnderstandingSchema } from '../shared/schemas.ts';
@@ -115,5 +117,22 @@ describe('stage definitions', () => {
     const c = chatStage.build({ level: 'beginner', appName: 'HabitHero', planSummary: plan.summary, files, intent: 'ask', messages: [{ role: 'assistant', content: 'Hi!' }, { role: 'user', content: 'What is state?' }], context: { file: 'App.js' } });
     expect(c.messages[0]!.role).toBe('user');
     expect(JSON.stringify(c.messages)).toContain('The student is looking at App.js.');
+  });
+});
+
+describe('Vercel functions', () => {
+  // Vercel compiles api/ and everything it imports to .js files but keeps import paths as written,
+  // so a '../server/x.ts' import crashes every function at startup. Vite and these tests don't notice.
+  it('import local files with .js extensions', () => {
+    const tsImports = ['api', 'server', 'shared'].flatMap((dir) =>
+      readdirSync(join(process.cwd(), dir), { recursive: true, encoding: 'utf8' })
+        .filter((file) => /\.tsx?$/.test(file))
+        .flatMap((file) =>
+          [...readFileSync(join(process.cwd(), dir, file), 'utf8').matchAll(/(?:from|import)\s*\(?\s*['"](\.{1,2}\/[^'"]+\.tsx?)['"]/g)].map(
+            (match) => `${dir}/${file.replace(/\\/g, '/')} imports '${match[1]}'`,
+          ),
+        ),
+    );
+    expect(tsImports).toEqual([]);
   });
 });

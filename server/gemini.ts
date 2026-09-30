@@ -18,9 +18,9 @@
  */
 import { ApiError, FinishReason, GoogleGenAI, ThinkingLevel, type Content, type GenerateContentConfig } from '@google/genai';
 import { z } from 'zod';
-import type { StreamEvent } from '../shared/schemas.ts';
-import type { Effort } from './claude.ts';
-import type { StageCall } from './stages.ts';
+import type { StreamEvent } from '../shared/schemas.js';
+import type { Effort } from './claude.js';
+import type { StageCall } from './stages.js';
 
 export const DEFAULT_GEMINI_MODEL = 'gemini-3.8-flash';
 /**

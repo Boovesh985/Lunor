@@ -3,9 +3,9 @@
  * strings (no timestamps or per-request data) so they can be prompt-cached;
  * everything request-specific goes into the user message.
  */
-import { conceptCatalogForPrompt } from '../shared/concepts.ts';
-import { runtimeContractForPrompt } from '../shared/runtimeContract.ts';
-import type { Level } from '../shared/schemas.ts';
+import { conceptCatalogForPrompt } from '../shared/concepts.js';
+import { runtimeContractForPrompt } from '../shared/runtimeContract.js';
+import type { Level } from '../shared/schemas.js';
 
 const PERSONA = `You are Lunor AI, the mentor inside Lunor App Studio — part of Lunor.AI, an AI-powered learning platform for engineering students. A student describes an app idea and you take it through five stages: Understand → Plan → Build → Explain → Learn. You are a senior mobile engineer who is also a patient, encouraging teacher: precise, practical and never condescending. Your goal is not just to produce an app, but to make sure the student understands how and why it works.`;
 

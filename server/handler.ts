@@ -9,13 +9,13 @@
  *   {"type":"done","stopReason":"end_turn","usage":{…}}
  */
 import { z } from 'zod';
-import type { StreamEvent } from '../shared/schemas.ts';
-import { streamClaude, toErrorEvent } from './claude.ts';
-import { streamGemini } from './gemini.ts';
-import { mockStream } from './mock.ts';
-import { chooseProvider, modelFor } from './providers.ts';
-import { clientIp, takeRateLimit } from './rateLimit.ts';
-import type { StageDefinition } from './stages.ts';
+import type { StreamEvent } from '../shared/schemas.js';
+import { streamClaude, toErrorEvent } from './claude.js';
+import { streamGemini } from './gemini.js';
+import { mockStream } from './mock.js';
+import { chooseProvider, modelFor } from './providers.js';
+import { clientIp, takeRateLimit } from './rateLimit.js';
+import type { StageDefinition } from './stages.js';
 
 const MAX_BODY_BYTES = 900_000;
 export const USER_KEY_HEADER = 'x-user-anthropic-key';

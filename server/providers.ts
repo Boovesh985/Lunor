@@ -6,8 +6,8 @@
  *  4. GEMINI_API_KEY → Gemini on the server's key (free-tier fallback)
  * Server keys are rate-limited per IP.
  */
-import { resolveModel } from './claude.ts';
-import { resolveGeminiModel } from './gemini.ts';
+import { resolveModel } from './claude.js';
+import { resolveGeminiModel } from './gemini.js';
 
 export type ProviderName = 'anthropic' | 'gemini' | 'mock';
 
