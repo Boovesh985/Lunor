@@ -1,0 +1,106 @@
+{
+  "summary": "A three-screen Expo app. All habit data lives in one custom hook (useHabits) that loads from and saves to AsyncStorage; App.js owns simple navigation state (active tab + add modal) and passes data down to screens through props.",
+  "techStack": [
+    { "name": "React Native + Expo", "category": "Framework", "reason": "Cross-platform UI from one codebase, with instant testing in Expo Go." },
+    { "name": "JavaScript (ES modules)", "category": "Language", "reason": "Beginner-friendly and the language React Native is built on." },
+    { "name": "React hooks", "category": "State", "reason": "useState + useEffect inside a custom hook keep all habit logic in one place." },
+    { "name": "AsyncStorage", "category": "Storage", "reason": "Simple key-value storage that persists JSON on the device." },
+    { "name": "Custom tab bar + Modal", "category": "Navigation", "reason": "Two tabs and one sheet don't need a navigation library — state is enough." },
+    { "name": "Ionicons (@expo/vector-icons)", "category": "Icons", "reason": "Crisp, familiar icons for tabs, checkmarks and buttons." },
+    { "name": "react-native-safe-area-context", "category": "UI", "reason": "Keeps content clear of notches and the home indicator." }
+  ],
+  "screens": [
+    {
+      "id": "today",
+      "name": "Today",
+      "purpose": "The daily checklist: tick habits off and see today's progress.",
+      "kind": "tab",
+      "components": ["Date header", "DayProgress card", "FlatList of HabitCards", "Floating + button", "Empty state"],
+      "navigatesTo": [
+        { "screenId": "addHabit", "trigger": "Tap the + button" },
+        { "screenId": "progress", "trigger": "Tap the Progress tab" }
+      ]
+    },
+    {
+      "id": "progress",
+      "name": "Progress",
+      "purpose": "Weekly overview: completion rate, check-ins, best streak and a 7-day grid.",
+      "kind": "tab",
+      "components": ["Stat cards", "Weekly habit grid", "Empty state"],
+      "navigatesTo": [{ "screenId": "today", "trigger": "Tap the Today tab" }]
+    },
+    {
+      "id": "addHabit",
+      "name": "Add Habit",
+      "purpose": "A form to create a habit with a name, emoji and colour.",
+      "kind": "modal",
+      "components": ["Live preview card", "Name input with counter", "Emoji picker", "Colour picker", "Add button"],
+      "navigatesTo": [{ "screenId": "today", "trigger": "Save or Cancel" }]
+    }
+  ],
+  "navigation": {
+    "pattern": "Bottom tabs + modal",
+    "description": "App.js stores activeTab and isAdding in state. The custom TabBar switches between Today and Progress, and a slide-up Modal shows the Add Habit form."
+  },
+  "dataModel": [
+    {
+      "entity": "Habit",
+      "description": "A daily habit and the history of days it was completed.",
+      "fields": [
+        { "name": "id", "type": "string", "description": "Unique id (a timestamp) used as the list key." },
+        { "name": "name", "type": "string", "description": "What the habit is, e.g. \"Read 20 pages\"." },
+        { "name": "emoji", "type": "string", "description": "Icon shown on the card." },
+        { "name": "color", "type": "string (hex)", "description": "Accent colour for the card and grid." },
+        { "name": "createdAt", "type": "string (YYYY-MM-DD)", "description": "The day the habit was added." },
+        { "name": "completedDates", "type": "string[] (YYYY-MM-DD)", "description": "Every day the habit was done; streaks are calculated from this." }
+      ],
+      "relations": []
+    }
+  ],
+  "stateManagement": {
+    "approach": "Custom hook (useHabits)",
+    "description": "One hook owns the habits array and exposes addHabit, toggleHabit and deleteHabit, so screens never modify data directly."
+  },
+  "persistence": {
+    "approach": "AsyncStorage (JSON)",
+    "description": "The hook loads the saved array on startup (falling back to sample habits) and saves the whole list whenever it changes."
+  },
+  "architecture": [
+    { "layer": "Screens", "description": "Full-page views composed from components.", "files": ["src/screens/TodayScreen.js", "src/screens/StatsScreen.js", "src/screens/AddHabitScreen.js"] },
+    { "layer": "Components", "description": "Reusable UI pieces driven by props.", "files": ["src/components/HabitCard.js", "src/components/DayProgress.js", "src/components/TabBar.js"] },
+    { "layer": "State & persistence", "description": "The single source of truth for habits.", "files": ["src/hooks/useHabits.js"] },
+    { "layer": "Data & utilities", "description": "Sample data and pure date helpers.", "files": ["src/data/sampleHabits.js", "src/utils/dates.js"] },
+    { "layer": "Design tokens", "description": "Colours, spacing and type used everywhere.", "files": ["src/theme.js"] }
+  ],
+  "files": [
+    { "path": "src/theme.js", "purpose": "Design tokens: colours, habit palette, spacing, radius and type scale.", "kind": "theme" },
+    { "path": "src/utils/dates.js", "purpose": "Pure helpers for date keys, the last 7 days and streak calculation.", "kind": "util" },
+    { "path": "src/data/sampleHabits.js", "purpose": "Realistic sample habits generated relative to today.", "kind": "data" },
+    { "path": "src/hooks/useHabits.js", "purpose": "Habit state, AsyncStorage persistence and the add/toggle/delete actions.", "kind": "hook" },
+    { "path": "src/components/HabitCard.js", "purpose": "One habit row: emoji, name, streak and a check button.", "kind": "component" },
+    { "path": "src/components/DayProgress.js", "purpose": "Today's progress card with a percentage bar.", "kind": "component" },
+    { "path": "src/components/TabBar.js", "purpose": "Custom bottom tab bar with Ionicons.", "kind": "navigation" },
+    { "path": "src/screens/TodayScreen.js", "purpose": "Daily checklist screen with a FlatList and add button.", "kind": "screen" },
+    { "path": "src/screens/AddHabitScreen.js", "purpose": "Validated form for creating a habit.", "kind": "screen" },
+    { "path": "src/screens/StatsScreen.js", "purpose": "Weekly statistics and completion grid.", "kind": "screen" },
+    { "path": "App.js", "purpose": "Root component: habit state, tab navigation and the add modal.", "kind": "entry" }
+  ],
+  "buildSteps": [
+    { "id": "tokens", "title": "Design tokens & date helpers", "description": "Define the look once, and write small pure functions for dates and streaks that everything else relies on.", "files": ["src/theme.js", "src/utils/dates.js"], "concepts": ["design-tokens", "dates", "pure-functions"] },
+    { "id": "state", "title": "Sample data & habit state", "description": "Create realistic seed data and the useHabits hook that loads, saves and updates habits.", "files": ["src/data/sampleHabits.js", "src/hooks/useHabits.js"], "concepts": ["custom-hooks", "use-effect", "async-storage", "immutability"] },
+    { "id": "components", "title": "Reusable components", "description": "Build the habit card, the progress card and the tab bar as prop-driven components.", "files": ["src/components/HabitCard.js", "src/components/DayProgress.js", "src/components/TabBar.js"], "concepts": ["props", "pressable", "vector-icons"] },
+    { "id": "screens", "title": "The three screens", "description": "Compose components into the Today, Add Habit and Progress screens.", "files": ["src/screens/TodayScreen.js", "src/screens/AddHabitScreen.js", "src/screens/StatsScreen.js"], "concepts": ["flatlist", "text-input", "form-validation", "array-methods"] },
+    { "id": "wiring", "title": "Wire everything in App.js", "description": "Connect the hook to the screens and add tab + modal navigation.", "files": ["App.js"], "concepts": ["navigation-state", "lifting-state", "modal-alert"] }
+  ],
+  "risks": [
+    { "risk": "Saving before the first load finishes could wipe saved habits.", "mitigation": "Only save after isLoading becomes false." },
+    { "risk": "Time zones and midnight can make streaks off by one day.", "mitigation": "Store local YYYY-MM-DD date keys instead of timestamps." },
+    { "risk": "Corrupted storage could crash the app on launch.", "mitigation": "Wrap JSON.parse in try/catch and fall back to sample data." }
+  ],
+  "futureIdeas": [
+    "Evening reminders with expo-notifications",
+    "Habits for specific weekdays",
+    "Monthly heatmap and longest-ever streak",
+    "Cloud backup so habits survive a new phone"
+  ]
+}

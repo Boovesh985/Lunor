@@ -1,0 +1,62 @@
+{
+  "name": "lunor-app-studio",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Lunor App Studio — an AI mentor that takes an app idea through Understand → Plan → Build → Explain → Learn, with a live React Native preview.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "npm run build:runtime && vite",
+    "dev:mock": "npm run build:runtime && cross-env LUNOR_MOCK_AI=1 vite",
+    "build": "npm run build:runtime && vite build",
+    "build:runtime": "vite build --config vite.runtime.config.ts",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "test:live": "cross-env LUNOR_LIVE=1 vitest run tests/live",
+    "check": "npm run typecheck && npm run test && npm run build"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "0.129.0",
+    "@codemirror/lang-javascript": "^6.2.5",
+    "@codemirror/language": "^6.12.4",
+    "@codemirror/state": "^6.5.2",
+    "@codemirror/view": "^6.38.0",
+    "@google/genai": "^2.24.0",
+    "@lezer/highlight": "^1.2.1",
+    "@radix-ui/react-dialog": "^1.1.23",
+    "@uiw/react-codemirror": "^4.25.12",
+    "canvas-confetti": "^1.9.4",
+    "clsx": "^2.1.1",
+    "diff": "^9.0.0",
+    "jszip": "^3.10.2",
+    "lucide-react": "^1.48.0",
+    "mermaid": "^12.0.0",
+    "motion": "^13.4.6",
+    "partial-json": "^0.1.7",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "react-markdown": "^10.1.0",
+    "react-native-web": "^0.21.3",
+    "remark-gfm": "^4.0.1",
+    "sucrase": "^3.35.1",
+    "tailwind-merge": "^3.7.0",
+    "zod": "^4.6.5",
+    "zustand": "^5.0.15"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/canvas-confetti": "^1.9.0",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "cross-env": "^10.0.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "~5.9.3",
+    "vite": "^8.3.1",
+    "vitest": "^5.0.2"
+  }
+}

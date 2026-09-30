@@ -1,0 +1,86 @@
+{
+  "appName": "HabitHero",
+  "tagline": "Build daily habits one streak at a time",
+  "emoji": "🔥",
+  "category": "Productivity",
+  "summary": "You want a lightweight daily companion for students: a list of small habits (water, reading, DSA practice) that can be ticked off in one tap, with streaks that make skipping a day feel like breaking a chain. The core loop is open → check off → feel progress.",
+  "problem": "Students start habits with enthusiasm but lose momentum within a week because progress is invisible. Notes apps and generic to-do lists reset every day and don't reward consistency, so there's no reason to come back tomorrow.",
+  "targetUsers": [
+    {
+      "persona": "First-year engineering student",
+      "description": "Juggling classes, labs and hostel life, and trying to build routines like coding practice and exercise.",
+      "needs": ["Check in within seconds", "See progress at a glance", "Stay motivated on busy days"]
+    },
+    {
+      "persona": "Placement-season preparer",
+      "description": "Needs daily consistency (one DSA problem, 20 pages of reading) more than intensity.",
+      "needs": ["Visible streaks that reward consistency", "A weekly view to spot missed days"]
+    }
+  ],
+  "features": [
+    { "id": "daily-checklist", "name": "Daily checklist", "description": "See today's habits and tick each one off with a single tap.", "priority": "must" },
+    { "id": "streaks", "name": "Streak tracking", "description": "Each habit shows how many days in a row it has been completed.", "priority": "must" },
+    { "id": "create-habit", "name": "Create habits", "description": "Add a habit with a name, an emoji icon and a colour.", "priority": "must" },
+    { "id": "delete-habit", "name": "Delete habits", "description": "Remove a habit after confirming, so mistakes are easy to avoid.", "priority": "must" },
+    { "id": "saved-on-device", "name": "Saved on device", "description": "Habits and history survive closing the app.", "priority": "must" },
+    { "id": "weekly-progress", "name": "Weekly progress", "description": "A 7-day grid plus completion rate and best streak.", "priority": "should" },
+    { "id": "daily-progress", "name": "Daily progress bar", "description": "A header showing how much of today is done, with an encouraging message.", "priority": "should" },
+    { "id": "reminders", "name": "Daily reminders", "description": "A notification nudging you to check in each evening.", "priority": "could" }
+  ],
+  "outOfScope": [
+    "Push-notification reminders (needs notification permissions and scheduling)",
+    "Accounts and syncing across devices",
+    "Habits with custom schedules such as 3× per week",
+    "Social features like sharing streaks with friends"
+  ],
+  "assumptions": [
+    "Every habit is daily; a day counts as done once it is checked off.",
+    "A streak stays alive until the end of today, so an unchecked habit doesn't reset until tomorrow.",
+    "One person uses the app on one phone, so local storage is enough."
+  ],
+  "scopeNote": "Reminders need push notifications, so v1 keeps everything on the device: habits and their history are saved with AsyncStorage, and the app starts with four sample habits so it feels alive on first launch.",
+  "clarifyingQuestions": [
+    {
+      "id": "missed-day",
+      "question": "If a day is missed, what should happen to the streak?",
+      "why": "This decides how streaks are calculated and how forgiving the app feels.",
+      "options": ["Reset to zero (classic streak)", "Allow one rest day per week", "Show weekly completion instead"],
+      "defaultIndex": 0
+    },
+    {
+      "id": "frequency",
+      "question": "Are habits always daily?",
+      "why": "Custom schedules change the data model and make streak maths much harder.",
+      "options": ["Daily only", "Specific weekdays", "X times per week"],
+      "defaultIndex": 0
+    },
+    {
+      "id": "feel",
+      "question": "What should the app feel like?",
+      "why": "Sets the colour palette, typography and tone of the copy.",
+      "options": ["Calm & minimal", "Bold & motivating", "Playful & game-like"],
+      "defaultIndex": 1
+    }
+  ],
+  "complexity": {
+    "level": "beginner",
+    "reasoning": "Three screens, one data type and local storage — ideal for learning components, state and persistence without backend complexity.",
+    "estimatedHours": 10
+  },
+  "platform": {
+    "recommendation": "React Native + Expo",
+    "reasoning": "One JavaScript codebase runs on Android and iOS, and Expo Go lets you test on your own phone instantly — perfect for an app you'll use every day.",
+    "alternatives": [
+      { "name": "Flutter", "tradeoff": "Excellent performance and UI toolkit, but you'd learn Dart instead of reusing JavaScript/React skills." },
+      { "name": "Native (Kotlin / Swift)", "tradeoff": "Best platform integration, but two separate codebases for Android and iOS." },
+      { "name": "Progressive Web App", "tradeoff": "No app store needed, but weaker offline storage and no native feel on iOS." }
+    ]
+  },
+  "learningOpportunities": [
+    "Breaking a UI into reusable components with props",
+    "Managing state with useState inside a custom hook",
+    "Saving data on the device with AsyncStorage",
+    "Rendering lists efficiently with FlatList",
+    "Building a validated form with TextInput"
+  ]
+}

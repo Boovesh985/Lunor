@@ -1,0 +1,151 @@
+{
+  "overview": "HabitHero is built like a small tree. **App.js** sits at the top: it calls the `useHabits` hook, which is the *single source of truth* for your habits, and it decides which screen is visible. Data flows **down** through props (the list of habits), and actions flow **up** through callback props (\"this habit was tapped\").\n\nWhenever the habit list changes, React re-renders the screens with the new data, and an effect inside `useHabits` saves the list to **AsyncStorage** — the phone's small key-value database — so your streaks survive closing the app.",
+  "architecture": [
+    { "layer": "Screens", "description": "What the user sees: Today, Progress and the Add Habit form. They receive data and callbacks as props.", "files": ["src/screens/TodayScreen.js", "src/screens/StatsScreen.js", "src/screens/AddHabitScreen.js"] },
+    { "layer": "Components", "description": "Small reusable building blocks with no knowledge of storage.", "files": ["src/components/HabitCard.js", "src/components/DayProgress.js", "src/components/TabBar.js"] },
+    { "layer": "State & persistence", "description": "useHabits owns the data, updates it immutably and keeps it saved.", "files": ["src/hooks/useHabits.js"] },
+    { "layer": "Data, utilities & tokens", "description": "Sample data, pure date functions and the design tokens.", "files": ["src/data/sampleHabits.js", "src/utils/dates.js", "src/theme.js"] }
+  ],
+  "dataFlow": {
+    "scenario": "Checking off a habit",
+    "steps": [
+      { "title": "You tap a habit card", "description": "The card's Pressable calls `onToggle(habit.id)` — a function it received as a prop. The card itself doesn't change any data.", "file": "src/components/HabitCard.js", "startLine": 19, "endLine": 21, "anchor": "<Pressable" },
+      { "title": "The callback travels up", "description": "TodayScreen passed `onToggle` into every card, and App.js passed `toggleHabit` from the hook into TodayScreen. This is \"lifting state up\": the data lives above the components that use it.", "file": "App.js", "startLine": 36, "endLine": 42, "anchor": "<TodayScreen" },
+      { "title": "The hook creates a new array", "description": "`toggleHabit` uses `.map()` to build a brand-new list where only the tapped habit gets a new `completedDates` array. React only notices changes when it receives a new array.", "file": "src/hooks/useHabits.js", "startLine": 52, "endLine": 65, "anchor": "const toggleHabit = useCallback((id, dateKey = toDateKey()) => {" },
+      { "title": "React re-renders the screen", "description": "TodayScreen runs again with the new habits and recalculates `doneCount`, so the progress card updates automatically.", "file": "src/screens/TodayScreen.js", "startLine": 12, "endLine": 13, "anchor": "const today = toDateKey();" },
+      { "title": "The streak is recalculated", "description": "Each card recomputes its streak from `completedDates` by walking back day by day until it finds a missed day.", "file": "src/utils/dates.js", "startLine": 24, "endLine": 33, "anchor": "export function calculateStreak(completedDates) {" },
+      { "title": "The change is saved", "description": "Because `habits` changed, the save effect runs and writes the whole list to AsyncStorage as a JSON string.", "file": "src/hooks/useHabits.js", "startLine": 32, "endLine": 37, "anchor": "useEffect(() => {" }
+    ]
+  },
+  "files": [
+    {
+      "path": "App.js",
+      "role": "Root component",
+      "summary": "Connects everything: gets habit data from useHabits, decides which tab is visible, and shows the Add Habit modal.",
+      "sections": [
+        { "title": "Importing the building blocks", "startLine": 1, "endLine": 10, "anchor": "import { useState } from 'react';", "explanation": "Each `import` pulls in a piece from another file or package. Files export what they want to share, and App.js imports only what it needs — this keeps each file small and focused.", "concepts": ["es-modules"] },
+        { "title": "Tabs described as data", "startLine": 12, "endLine": 15, "anchor": "const TABS = [", "explanation": "Instead of hard-coding two buttons, the tabs are an **array of objects**. The TabBar loops over this array, so adding a third tab would just mean adding one more object.", "concepts": ["tab-bar", "data-modeling"] },
+        { "title": "One source of truth", "startLine": 17, "endLine": 23, "anchor": "export default function App() {", "explanation": "`useHabits()` returns the habit list plus functions to change it. Two small pieces of `useState` track navigation: which tab is active and whether the add sheet is open. Changing either one makes React re-render App.", "concepts": ["custom-hooks", "use-state", "lifting-state"] },
+        { "title": "Switching screens with state", "startLine": 31, "endLine": 46, "anchor": "return (", "explanation": "This is navigation without a library: a **ternary** (`condition ? A : B`) renders TodayScreen or StatsScreen depending on `activeTab`. Tapping a tab calls `setActiveTab`, React re-renders, and the other screen appears.", "concepts": ["navigation-state", "conditional-rendering"] },
+        { "title": "The add-habit sheet", "startLine": 48, "endLine": 55, "anchor": "<Modal", "explanation": "`Modal` slides a screen over the current one. It is visible while `isAdding` is true. When the form saves, `handleSave` adds the habit, closes the sheet and jumps back to the Today tab.", "concepts": ["modal-alert"] }
+      ]
+    },
+    {
+      "path": "src/theme.js",
+      "role": "Design tokens",
+      "summary": "Every colour, spacing value and text style in one place, so the whole app stays visually consistent.",
+      "sections": [
+        { "title": "The colour palette", "startLine": 4, "endLine": 14, "anchor": "export const colors = {", "explanation": "Colours are named by **purpose** (`primary`, `textMuted`, `danger`) rather than by value. Screens use `colors.primary`, so changing one hex code here restyles the entire app.", "concepts": ["design-tokens"] },
+        { "title": "Choices for new habits", "startLine": 16, "endLine": 18, "anchor": "// Colours and icons a user can pick for a new habit.", "explanation": "The pickers in the Add Habit form simply loop over these two arrays — data drives the UI.", "concepts": ["design-tokens", "array-methods"] },
+        { "title": "Spacing, radius and type scale", "startLine": 20, "endLine": 40, "anchor": "export const spacing = {", "explanation": "A fixed set of sizes (4, 8, 16, 24, 32) makes layouts feel balanced. The `typography` presets are spread into styles with `...typography.title`.", "concepts": ["design-tokens", "stylesheet"] }
+      ]
+    },
+    {
+      "path": "src/utils/dates.js",
+      "role": "Pure helpers",
+      "summary": "Small functions for working with days and streaks. They don't touch React at all, which makes them easy to test and reuse.",
+      "sections": [
+        { "title": "Date keys", "startLine": 3, "endLine": 8, "anchor": "export function toDateKey(date = new Date()) {", "explanation": "Turns a date into a string like `2026-09-29`. Strings are easy to compare and to save as JSON, and they ignore the time of day — so checking a habit at 11 pm and 7 am count as different days, as expected.", "concepts": ["dates", "pure-functions"] },
+        { "title": "Looking back in time", "startLine": 10, "endLine": 19, "anchor": "export function daysAgo(count) {", "explanation": "`daysAgo(1)` is yesterday. `lastNDays(7)` uses `Array.from` to build the last seven days in order — exactly what the weekly grid needs.", "concepts": ["dates", "array-methods"] },
+        { "title": "How a streak is counted", "startLine": 21, "endLine": 33, "anchor": "// A streak is the number of consecutive completed days ending today.", "explanation": "A `Set` gives fast lookups. The loop starts at today (or yesterday if today isn't done yet) and keeps stepping back one day while each day is completed. The first missed day stops the count.", "concepts": ["pure-functions", "data-modeling"] },
+        { "title": "Friendly formatting", "startLine": 35, "endLine": 41, "anchor": "export function formatToday() {", "explanation": "`toLocaleDateString` formats dates for humans, e.g. \"Tuesday, September 29\" or a single-letter weekday for the grid.", "concepts": ["dates"] }
+      ]
+    },
+    {
+      "path": "src/data/sampleHabits.js",
+      "role": "Seed data",
+      "summary": "Four realistic habits so the very first launch already shows streaks and progress.",
+      "sections": [
+        { "title": "Patterns become dates", "startLine": 5, "endLine": 10, "anchor": "function history(pattern) {", "explanation": "A compact trick: the string `'-xx-x'` means \"not today, yesterday yes, the day before yes…\". `split`, `map` and `filter` turn it into real date keys, always relative to today.", "concepts": ["array-methods", "dates"] },
+        { "title": "The sample habits", "startLine": 14, "endLine": 47, "anchor": "export const sampleHabits = [", "explanation": "Each object follows the Habit data model from the plan: `id`, `name`, `emoji`, `color`, `createdAt` and `completedDates`.", "concepts": ["data-modeling"] }
+      ]
+    },
+    {
+      "path": "src/hooks/useHabits.js",
+      "role": "Custom hook",
+      "summary": "The brain of the app: owns the habit list, loads and saves it, and exposes simple actions.",
+      "sections": [
+        { "title": "The hook's own state", "startLine": 10, "endLine": 12, "anchor": "export function useHabits() {", "explanation": "A custom hook is just a function whose name starts with `use` and that calls other hooks. Here it keeps the habits array and an `isLoading` flag.", "concepts": ["custom-hooks", "use-state"] },
+        { "title": "Loading saved habits", "startLine": 14, "endLine": 28, "anchor": "// 1) Load saved habits once, when the app starts.", "explanation": "`useEffect` with an empty dependency array `[]` runs **once** after the first render. Reading storage is asynchronous, so it uses `async/await`. If nothing is saved (first launch) or the data is broken, it falls back to the sample habits.", "concepts": ["use-effect", "async-storage", "async-await", "error-handling"] },
+        { "title": "Saving every change", "startLine": 30, "endLine": 37, "anchor": "// 2) Save whenever the list changes — but only after the first load,", "explanation": "This effect lists `[habits, isLoading]` as dependencies, so it runs every time the list changes. AsyncStorage only stores strings, hence `JSON.stringify`. The `isLoading` check prevents saving the empty starting list over your real data.", "concepts": ["use-effect", "async-storage", "json-serialization"] },
+        { "title": "Actions that update immutably", "startLine": 39, "endLine": 69, "anchor": "const addHabit = useCallback(({ name, emoji, color }) => {", "explanation": "Each action passes a function to `setHabits` that receives the current list and returns a **new** one: spread `[habit, ...current]` to add, `.map` to toggle, `.filter` to delete. Never mutating state is what lets React detect changes.", "concepts": ["immutability", "array-methods", "use-callback"] },
+        { "title": "The hook's public API", "startLine": 71, "endLine": 71, "anchor": "return { habits, isLoading, addHabit, toggleHabit, deleteHabit };", "explanation": "Components get data and verbs, not raw `setHabits`. This keeps the rules for changing habits in one place.", "concepts": ["custom-hooks"] }
+      ]
+    },
+    {
+      "path": "src/components/HabitCard.js",
+      "role": "Component",
+      "summary": "Draws one habit and reports taps and long-presses back to its parent.",
+      "sections": [
+        { "title": "Values derived from props", "startLine": 6, "endLine": 8, "anchor": "export default function HabitCard({ habit, onToggle, onDelete }) {", "explanation": "The card receives a `habit` object plus two callbacks. `isDone` and `streak` are calculated from the habit on every render instead of being stored separately.", "concepts": ["props", "pure-functions"] },
+        { "title": "Confirming before deleting", "startLine": 10, "endLine": 16, "anchor": "// Destructive actions should always ask first and be easy to cancel.", "explanation": "`Alert.alert` shows a native dialog. The \"Delete\" button's `onPress` is where the real deletion happens; the `destructive` style makes it red on iOS.", "concepts": ["modal-alert"] },
+        { "title": "A pressable, accessible card", "startLine": 19, "endLine": 26, "anchor": "<Pressable", "explanation": "`Pressable` handles taps and long-presses. Its `style` can be a function of `{ pressed }`, giving instant visual feedback. The accessibility props tell screen readers this behaves like a checkbox.", "concepts": ["pressable", "accessibility"] },
+        { "title": "Layout and status icon", "startLine": 27, "endLine": 42, "anchor": "<View style={[styles.emojiBadge, { backgroundColor: habit.color + '1F' }]}>", "explanation": "A row of three parts: emoji badge, text (which takes the remaining space with `flex: 1`) and a check icon. Adding `'1F'` to a hex colour makes a transparent tint of it.", "concepts": ["flexbox", "vector-icons", "conditional-rendering"] },
+        { "title": "Styles", "startLine": 47, "endLine": 95, "anchor": "const styles = StyleSheet.create({", "explanation": "`StyleSheet.create` groups the styles for this component. Notice there are no raw colours: everything comes from the theme tokens.", "concepts": ["stylesheet"] }
+      ]
+    },
+    {
+      "path": "src/components/DayProgress.js",
+      "role": "Presentational component",
+      "summary": "Shows today's percentage and a progress bar. It only receives numbers — no state, no side effects.",
+      "sections": [
+        { "title": "Calculating what to show", "startLine": 6, "endLine": 11, "anchor": "export default function DayProgress({ done, total }) {", "explanation": "The percentage and message are derived from `done` and `total`. Guarding `total === 0` avoids dividing by zero.", "concepts": ["props", "conditional-rendering"] },
+        { "title": "A bar made of two Views", "startLine": 13, "endLine": 27, "anchor": "return (", "explanation": "The \"track\" is a grey View and the \"fill\" is a white View inside it whose width is a percentage string like `'75%'`. No chart library needed.", "concepts": ["flexbox", "stylesheet"] }
+      ]
+    },
+    {
+      "path": "src/components/TabBar.js",
+      "role": "Navigation component",
+      "summary": "The bottom tab bar. It doesn't store the active tab itself — App.js does.",
+      "sections": [
+        { "title": "Respecting the safe area", "startLine": 8, "endLine": 12, "anchor": "export default function TabBar({ tabs, activeTab, onChange }) {", "explanation": "`useSafeAreaInsets` returns how much space the phone's home indicator needs, so the bar never sits under it on newer iPhones.", "concepts": ["safe-area", "props"] },
+        { "title": "One button per tab", "startLine": 13, "endLine": 31, "anchor": "{tabs.map((tab) => {", "explanation": "`.map` turns each tab object into a Pressable. The `key` prop helps React track items. The active tab gets a filled icon and the primary colour.", "concepts": ["array-methods", "tab-bar", "vector-icons"] }
+      ]
+    },
+    {
+      "path": "src/screens/TodayScreen.js",
+      "role": "Screen",
+      "summary": "The daily checklist: progress header, the list of habits and the add button.",
+      "sections": [
+        { "title": "Counting today's check-ins", "startLine": 9, "endLine": 13, "anchor": "export default function TodayScreen({ habits, isLoading, onToggle, onDelete, onAddPress }) {", "explanation": "`filter(...).length` counts habits whose `completedDates` include today. Because it's derived from props, it can never get out of sync.", "concepts": ["props", "array-methods"] },
+        { "title": "A loading state", "startLine": 15, "endLine": 21, "anchor": "if (isLoading) {", "explanation": "While storage is being read, the screen returns a spinner early instead of flashing an empty list.", "concepts": ["conditional-rendering"] },
+        { "title": "An efficient list", "startLine": 25, "endLine": 46, "anchor": "<FlatList", "explanation": "`FlatList` only renders the rows that are on screen, which keeps long lists fast. `keyExtractor` gives each row a stable identity, the header scrolls with the list, and `ListEmptyComponent` shows a friendly message when there are no habits.", "concepts": ["flatlist", "list-performance"] },
+        { "title": "The floating add button", "startLine": 48, "endLine": 55, "anchor": "<Pressable", "explanation": "Positioned absolutely in the bottom-right corner. It has no visible text, so `accessibilityLabel` describes it for screen readers.", "concepts": ["pressable", "accessibility"] }
+      ]
+    },
+    {
+      "path": "src/screens/AddHabitScreen.js",
+      "role": "Form screen",
+      "summary": "A small, validated form with a live preview of the new habit.",
+      "sections": [
+        { "title": "Form state", "startLine": 8, "endLine": 14, "anchor": "export default function AddHabitScreen({ onSave, onCancel }) {", "explanation": "Each field has its own `useState`. The form is **controlled**: what you see on screen is always exactly what's in state.", "concepts": ["use-state", "text-input"] },
+        { "title": "Validate, then save", "startLine": 16, "endLine": 23, "anchor": "function handleSave() {", "explanation": "Before saving, the name is trimmed and checked. If it's too short, an error message is stored in state and shown under the input; otherwise the parent's `onSave` receives the new habit.", "concepts": ["form-validation"] },
+        { "title": "Live preview", "startLine": 38, "endLine": 46, "anchor": "{/* A live preview of the habit being created */}", "explanation": "The preview reads the same state as the form, so it updates on every keystroke — a nice example of UI being a function of state.", "concepts": ["conditional-rendering"] },
+        { "title": "A controlled TextInput", "startLine": 49, "endLine": 67, "anchor": "<TextInput", "explanation": "`value` comes from state and `onChangeText` updates it. Typing also clears an old error. `maxLength` limits the name, and a counter shows how many characters are used.", "concepts": ["text-input", "form-validation"] },
+        { "title": "Emoji and colour pickers", "startLine": 69, "endLine": 95, "anchor": "<Text style={styles.label}>Icon</Text>", "explanation": "Both pickers `.map` over arrays from the theme. The selected option is highlighted by comparing it with state.", "concepts": ["array-methods", "pressable"] }
+      ]
+    },
+    {
+      "path": "src/screens/StatsScreen.js",
+      "role": "Screen",
+      "summary": "Weekly statistics calculated from the habit list.",
+      "sections": [
+        { "title": "The last seven days", "startLine": 8, "endLine": 10, "anchor": "export default function StatsScreen({ habits }) {", "explanation": "`lastNDays(7)` gives the dates for the grid columns, and `.map(toDateKey)` converts them to keys for comparison.", "concepts": ["dates", "array-methods"] },
+        { "title": "Summary numbers with reduce", "startLine": 12, "endLine": 19, "anchor": "// Summary numbers are derived with array methods — no extra state needed.", "explanation": "`reduce` walks through all habits and combines them into one number: total check-ins this week and the best current streak.", "concepts": ["array-methods", "use-memo"] },
+        { "title": "Stat cards in a row", "startLine": 27, "endLine": 31, "anchor": "<View style={styles.statsRow}>", "explanation": "Three `StatCard`s share the row equally thanks to `flex: 1` and `gap`.", "concepts": ["components", "flexbox"] },
+        { "title": "The weekly grid", "startLine": 44, "endLine": 58, "anchor": "{habits.map((habit) => (", "explanation": "A nested loop: one row per habit, and inside it one dot per day. A dot is filled with the habit's colour when that day is in `completedDates`.", "concepts": ["array-methods", "flexbox"] },
+        { "title": "A small local component", "startLine": 67, "endLine": 76, "anchor": "// A small component that only this screen uses can live in the same file.", "explanation": "`StatCard` isn't exported — it's a private helper for this screen. Move it to src/components only when another screen needs it.", "concepts": ["components"] }
+      ]
+    }
+  ],
+  "glossary": [
+    { "term": "Component", "definition": "A function that returns UI (JSX). Screens and cards are both components." },
+    { "term": "Props", "definition": "Inputs passed from a parent component to a child, like function arguments." },
+    { "term": "State", "definition": "Data a component remembers between renders; changing it re-renders the UI." },
+    { "term": "Hook", "definition": "A function starting with `use` that lets components use React features like state and effects." },
+    { "term": "Effect", "definition": "Code that runs after rendering to sync with the outside world, such as storage." },
+    { "term": "AsyncStorage", "definition": "A simple, persistent key-value store on the phone that saves strings." },
+    { "term": "Immutable update", "definition": "Creating a new array/object with the change instead of editing the old one." },
+    { "term": "Design token", "definition": "A named design value (colour, spacing) defined once and reused everywhere." }
+  ]
+}

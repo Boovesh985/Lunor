@@ -1,0 +1,10 @@
+{
+  "id": "habit-hero",
+  "title": "HabitHero",
+  "emoji": "🔥",
+  "level": "beginner",
+  "idea": "A habit tracker for college students that helps them build daily habits like drinking water, reading and coding practice — with streaks to keep them motivated.",
+  "description": "Daily checklist, streaks, a weekly progress grid and on-device persistence.",
+  "accent": "#6C5CE7",
+  "tags": ["Custom hook", "AsyncStorage", "FlatList", "Forms"]
+}

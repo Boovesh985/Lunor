@@ -1,0 +1,88 @@
+{
+  "appName": "SplitMate",
+  "tagline": "Split room expenses fairly and settle up in a tap",
+  "emoji": "💸",
+  "category": "Finance",
+  "summary": "SplitMate is a shared expense tracker for students living together. Roommates log what they paid for — groceries, electricity, Wi-Fi — and the app works out everyone's balance and the fewest payments needed to settle up.",
+  "problem": "Hostel and flat roommates constantly front money for each other, then lose track of who paid what. Chat messages and mental maths lead to awkward reminders, rounding arguments and money nobody remembers, and generic finance apps are built for individuals, not groups.",
+  "targetUsers": [
+    {
+      "persona": "Hostel roommate on a budget",
+      "description": "Shares a room with 2–4 people and pays for groceries or bills a few times a month.",
+      "needs": ["See instantly who owes whom", "Log an expense in under 10 seconds", "Settle up without doing maths"]
+    },
+    {
+      "persona": "The room's unofficial accountant",
+      "description": "Usually pays the big bills (rent, electricity) and ends up chasing everyone.",
+      "needs": ["A fair, transparent history of every expense", "Clear amounts to request from each person", "Fewer awkward money conversations"]
+    }
+  ],
+  "features": [
+    { "id": "add-expense", "name": "Add shared expense", "description": "Log an amount, what it was for, who paid and who it is split between.", "priority": "must" },
+    { "id": "balances", "name": "Live balances", "description": "See each roommate's net balance — to receive or to pay — updated after every change.", "priority": "must" },
+    { "id": "settle-suggestions", "name": "Settle-up suggestions", "description": "Get the shortest list of payments that clears every balance.", "priority": "must" },
+    { "id": "record-payment", "name": "Record a payment", "description": "Mark a suggested payment as paid so balances update.", "priority": "must" },
+    { "id": "roommates", "name": "Manage roommates", "description": "Add people to the room and remove them once they are settled up.", "priority": "must" },
+    { "id": "activity-feed", "name": "Activity history", "description": "A timeline of expenses and payments with a category filter and delete.", "priority": "should" },
+    { "id": "categories", "name": "Expense categories", "description": "Tag expenses as groceries, electricity, Wi-Fi, rent, food or other.", "priority": "should" },
+    { "id": "custom-split", "name": "Unequal splits", "description": "Split by exact amounts or percentages instead of equally.", "priority": "could" },
+    { "id": "upi-request", "name": "UPI payment requests", "description": "Send a payment link straight from a settle-up suggestion.", "priority": "could" }
+  ],
+  "outOfScope": [
+    "Real money transfers or UPI integration",
+    "Syncing one room across several phones",
+    "Multiple groups (e.g. room and trip) in one app",
+    "Receipt photos"
+  ],
+  "assumptions": [
+    "One phone keeps the room's shared ledger, shown to roommates when settling up",
+    "Amounts are in Indian rupees and split equally",
+    "A room has between 2 and 8 people",
+    "Payments happen outside the app (cash or UPI) and are only recorded here"
+  ],
+  "scopeNote": "Real shared expenses need every roommate to see the same data, which means accounts and a backend. For the prototype, one device holds the room's ledger in AsyncStorage — the balance logic is identical, and syncing is listed as the first thing to add after the MVP.",
+  "clarifyingQuestions": [
+    {
+      "id": "split-mode",
+      "question": "How should expenses be split?",
+      "why": "Unequal splits change the data model (a share per person) and the form.",
+      "options": ["Always equally", "Equally, choosing who is included", "Exact amounts per person"],
+      "defaultIndex": 1
+    },
+    {
+      "id": "settle-style",
+      "question": "How should settling up work?",
+      "why": "Pairwise debts are simpler to explain; simplified debts need an algorithm but mean fewer payments.",
+      "options": ["Pay back each person you owe", "Suggest the fewest payments overall"],
+      "defaultIndex": 1
+    },
+    {
+      "id": "remove-member",
+      "question": "What happens when a roommate moves out?",
+      "why": "Deleting a person with an open balance would make money silently disappear.",
+      "options": ["Block removal until they are settled up", "Remove them and redistribute their balance", "Keep them forever"],
+      "defaultIndex": 0
+    }
+  ],
+  "complexity": {
+    "level": "intermediate",
+    "reasoning": "Several related entities, state shared across four screens and a real algorithm (debt simplification) — a natural step up from single-list apps.",
+    "estimatedHours": 18
+  },
+  "platform": {
+    "recommendation": "React Native + Expo",
+    "reasoning": "Roommates already have their phones out when paying, so a native app beats a spreadsheet. With Expo, one JavaScript codebase runs on both Android and iOS and can be tested instantly in Expo Go.",
+    "alternatives": [
+      { "name": "Flutter", "tradeoff": "Great UI performance, but you would learn Dart instead of building on JavaScript and React." },
+      { "name": "Progressive Web App", "tradeoff": "Easy to share by link, but weaker offline storage and no native feel on iOS." },
+      { "name": "Google Sheets", "tradeoff": "Zero code, but formulas break easily and nobody enjoys editing a spreadsheet on a phone." }
+    ]
+  },
+  "learningOpportunities": [
+    "Sharing state across screens with Context and useReducer",
+    "Modelling money safely with integers instead of decimals",
+    "Writing and testing a greedy settle-up algorithm as pure functions",
+    "Building a validated multi-field form",
+    "Deriving data with useMemo instead of storing duplicates"
+  ]
+}

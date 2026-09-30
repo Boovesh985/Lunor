@@ -1,0 +1,551 @@
+{
+  "overview": "SplitMate keeps the whole room's ledger — members, expenses and payments — in **one place**: a React Context whose state is managed by a **reducer** (`src/context/GroupContext.js`). Screens never edit that data directly. They call named actions such as `addExpense` or `settleUp`, the reducer returns a brand-new state object, and React re-renders every screen that reads it.\n\nBalances are never stored. Every time the history changes, `useBalances()` recalculates them with two **pure functions** in `src/utils/balances.js`: one nets out what each person paid and owes, the other suggests the fewest payments that settle everyone. Money is stored as whole **paise** (integers), so the maths is exact, and an effect saves the ledger to **AsyncStorage** after each change.",
+  "architecture": [
+    { "layer": "App shell", "description": "Providers, tab navigation and the Add-expense modal.", "files": ["App.js", "src/components/TabBar.js"] },
+    { "layer": "Screens & components", "description": "Views that read the group with useGroup() and call actions; Avatar is shared by all of them.", "files": ["src/screens/BalancesScreen.js", "src/screens/ActivityScreen.js", "src/screens/RoommatesScreen.js", "src/screens/AddExpenseScreen.js", "src/components/Avatar.js"] },
+    { "layer": "State", "description": "GroupProvider owns the reducer, loads and saves the ledger, and exposes useGroup() and useBalances().", "files": ["src/context/GroupContext.js"] },
+    { "layer": "Logic, data & design", "description": "Pure functions for money and balances (no React, easy to test), the starter room and the design tokens.", "files": ["src/utils/money.js", "src/utils/balances.js", "src/data/sampleGroup.js", "src/theme.js"] }
+  ],
+  "dataFlow": {
+    "scenario": "Adding a new expense",
+    "steps": [
+      {
+        "title": "You tap Add expense",
+        "description": "The floating button only flips a piece of state: `setIsAdding(true)`. Because the Modal's `visible` prop reads that state, the form slides up.",
+        "file": "App.js",
+        "startLine": 61,
+        "endLine": 63,
+        "anchor": "<Pressable"
+      },
+      {
+        "title": "The form validates as you type",
+        "description": "Every keystroke updates state and re-renders the form. `parseAmount` turns the text into paise (or `null`), and the `errors` object is recalculated from scratch — nothing to keep in sync.",
+        "file": "src/screens/AddExpenseScreen.js",
+        "startLine": 20,
+        "endLine": 27,
+        "anchor": "// Validation is derived from state, so errors update as the user types."
+      },
+      {
+        "title": "Save hands the data up",
+        "description": "`handleSave` shows errors if something is missing; otherwise it calls the `onSave` prop with a plain object. The form doesn't know where expenses are stored.",
+        "file": "src/screens/AddExpenseScreen.js",
+        "startLine": 39,
+        "endLine": 43,
+        "anchor": "function handleSave() {"
+      },
+      {
+        "title": "AppShell calls the action",
+        "description": "`handleSave` in App.js calls `addExpense` from the context, closes the modal and switches to the Balances tab.",
+        "file": "App.js",
+        "startLine": 39,
+        "endLine": 43,
+        "anchor": "function handleSave(expense) {"
+      },
+      {
+        "title": "The action creator dispatches",
+        "description": "`addExpense` adds an id and a timestamp, then dispatches `{ type: 'addExpense', expense }` to the reducer.",
+        "file": "src/context/GroupContext.js",
+        "startLine": 70,
+        "endLine": 74,
+        "anchor": "addExpense: ({ title, amount, category, paidBy, splitBetween }) =>"
+      },
+      {
+        "title": "The reducer returns a new state",
+        "description": "The reducer copies the state and puts the new expense first in a **new** array. React sees a new object and re-renders every consumer of the context.",
+        "file": "src/context/GroupContext.js",
+        "startLine": 14,
+        "endLine": 15,
+        "anchor": "case 'addExpense':"
+      },
+      {
+        "title": "Balances update and the ledger is saved",
+        "description": "`useBalances` notices `expenses` changed, so `useMemo` recomputes balances and settle-up suggestions. Meanwhile the save effect writes the new ledger to AsyncStorage.",
+        "file": "src/context/GroupContext.js",
+        "startLine": 97,
+        "endLine": 103,
+        "anchor": "export function useBalances() {"
+      }
+    ]
+  },
+  "files": [
+    {
+      "path": "App.js",
+      "role": "Root component",
+      "summary": "Sets up the providers, then AppShell switches between the three tabs and presents the Add-expense modal.",
+      "sections": [
+        {
+          "title": "Importing screens and providers",
+          "startLine": 1,
+          "endLine": 12,
+          "anchor": "import { useState } from 'react';",
+          "explanation": "App.js pulls together every piece: React Native primitives, the providers, the four screens and the design tokens. Relative paths like `./src/screens/...` point at files in this project; bare names like `react-native` come from installed packages.",
+          "concepts": ["es-modules"]
+        },
+        {
+          "title": "Tabs described as data",
+          "startLine": 14,
+          "endLine": 18,
+          "anchor": "const TABS = [",
+          "explanation": "Instead of hard-coding three buttons, the tabs are an array of plain objects (key, label and two Ionicons names). `TabBar` maps over this array, so adding a tab is a one-line change.",
+          "concepts": ["tab-bar", "vector-icons"]
+        },
+        {
+          "title": "Providers wrap the whole app",
+          "startLine": 22,
+          "endLine": 31,
+          "anchor": "export default function App() {",
+          "explanation": "`SafeAreaProvider` measures the notch and system bars; `GroupProvider` makes the room's data available to everything inside it. `AppShell` is a separate component on purpose: `useGroup()` only works **below** `<GroupProvider>`, so App itself can't call it.",
+          "concepts": ["context", "safe-area"]
+        },
+        {
+          "title": "Navigation is just state",
+          "startLine": 33,
+          "endLine": 43,
+          "anchor": "function AppShell() {",
+          "explanation": "No navigation library needed: `activeTab` decides which screen renders and `isAdding` controls the modal. `handleSave` is the glue between the form and the context — add the expense, close the sheet, show the updated balances.",
+          "concepts": ["navigation-state", "use-state"]
+        },
+        {
+          "title": "Screens, button and modal",
+          "startLine": 53,
+          "endLine": 78,
+          "anchor": "return (",
+          "explanation": "`{activeTab === 'balances' && <BalancesScreen />}` is conditional rendering: only the active screen exists. The floating button is hidden on the Roommates tab, and the `Modal` shows `AddExpenseScreen` while `isAdding` is true. Context flows into the modal too, so the form can read the member list.",
+          "concepts": ["conditional-rendering", "modal-alert"]
+        }
+      ]
+    },
+    {
+      "path": "src/theme.js",
+      "role": "Design tokens",
+      "summary": "Every colour, spacing value, text style and expense category, in one file.",
+      "sections": [
+        {
+          "title": "Colour palette with meaning",
+          "startLine": 4,
+          "endLine": 17,
+          "anchor": "export const colors = {",
+          "explanation": "Colours are named by **role**, not by hue: `positive` for money coming back, `negative` for money owed. Screens say `colors.negative`, so a redesign never means hunting through every file for `#DC2626`.",
+          "concepts": ["design-tokens"]
+        },
+        {
+          "title": "Categories as data",
+          "startLine": 22,
+          "endLine": 34,
+          "anchor": "// Expense categories: an Ionicons glyph and a tint for each.",
+          "explanation": "Each category is an object with an id, label, icon and colour. Expenses store only the `id`; `getCategory` looks up the rest and falls back to *Other* for unknown ids, so old data never crashes the UI.",
+          "concepts": ["data-modeling", "vector-icons"]
+        },
+        {
+          "title": "Spacing, radius and type scale",
+          "startLine": 36,
+          "endLine": 56,
+          "anchor": "export const spacing = {",
+          "explanation": "A small, fixed set of spacing and radius values keeps the layout rhythm consistent. Text styles are spread into StyleSheets (`...typography.caption`) and then tweaked where needed.",
+          "concepts": ["design-tokens", "stylesheet"]
+        }
+      ]
+    },
+    {
+      "path": "src/utils/money.js",
+      "role": "Pure helpers",
+      "summary": "Parses, formats and splits amounts that are stored as whole paise.",
+      "sections": [
+        {
+          "title": "Why paise, not rupees",
+          "startLine": 1,
+          "endLine": 2,
+          "anchor": "// Money helpers. Amounts are stored as whole paise (integers), never as",
+          "explanation": "JavaScript numbers are binary floating point, so `0.1 + 0.2` is `0.30000000000000004`. Integers are exact. Storing ₹249.75 as `24975` paise means sums and splits never drift — the standard approach in real payment systems.",
+          "concepts": ["data-modeling"]
+        },
+        {
+          "title": "Parsing what the user typed",
+          "startLine": 4,
+          "endLine": 10,
+          "anchor": "// Turns what the user typed (\"1,240.50\", \"₹ 99\") into paise, or null if invalid.",
+          "explanation": "The function strips `₹`, commas and spaces, then a regular expression accepts digits with at most two decimals. It returns `null` for anything invalid or zero — the form turns that `null` into an error message.",
+          "concepts": ["form-validation", "pure-functions"]
+        },
+        {
+          "title": "Indian digit grouping",
+          "startLine": 12,
+          "endLine": 26,
+          "anchor": "// 123456 paise → \"₹1,234.56\". Uses Indian digit grouping (₹1,23,456) and",
+          "explanation": "Indian numbering groups the last three digits, then pairs: `1,23,456`. The code splits off the last three digits and inserts commas every two digits in the rest. Paise are shown only when non-zero, so ₹999 stays short.",
+          "concepts": ["pure-functions"]
+        },
+        {
+          "title": "Splitting without losing a paisa",
+          "startLine": 28,
+          "endLine": 35,
+          "anchor": "// Splits a total into `count` shares that add up exactly to the total.",
+          "explanation": "₹100 ÷ 3 can't be split into equal paise. `splitEvenly` gives everyone the floor (`3333`) and hands the leftover paise to the first people in the list: `[3334, 3333, 3333]`. The shares always sum to the total, which is what keeps balances at exactly zero.",
+          "concepts": ["pure-functions", "array-methods"]
+        }
+      ]
+    },
+    {
+      "path": "src/utils/balances.js",
+      "role": "Business logic",
+      "summary": "Nets out each member's balance and computes a short list of payments that settles everyone.",
+      "sections": [
+        {
+          "title": "Every balance starts at zero",
+          "startLine": 7,
+          "endLine": 11,
+          "anchor": "export function computeBalances(members, expenses, settlements) {",
+          "explanation": "`Object.fromEntries` builds `{ me: 0, aarav: 0, ... }` from the member list. The small `add` helper ignores ids that aren't members any more, so a removed roommate's old expenses can't crash the maths.",
+          "concepts": ["array-methods", "data-modeling"]
+        },
+        {
+          "title": "Expenses: payer up, sharers down",
+          "startLine": 13,
+          "endLine": 19,
+          "anchor": "for (const expense of expenses) {",
+          "explanation": "For each expense the payer gains the full amount and everyone in the split (payer included) loses their share. Because the shares add up to the amount, each expense changes the **total** by exactly zero — balances always sum to ₹0.",
+          "concepts": ["pure-functions"]
+        },
+        {
+          "title": "Payments cancel debts",
+          "startLine": 21,
+          "endLine": 27,
+          "anchor": "for (const payment of settlements) {",
+          "explanation": "When Kabir pays Aarav, Kabir's balance goes **up** (he owes less) and Aarav's goes **down** (he is owed less). Recording payments as history instead of editing balances means you can delete a mistaken payment and everything recalculates.",
+          "concepts": ["pure-functions", "data-modeling"]
+        },
+        {
+          "title": "Sorting debtors and creditors",
+          "startLine": 33,
+          "endLine": 41,
+          "anchor": "export function suggestSettlements(balances) {",
+          "explanation": "Negative balances become debtors (with positive amounts), positive ones become creditors. Both lists are sorted largest first with `sort((a, b) => b.amount - a.amount)`.",
+          "concepts": ["array-methods"]
+        },
+        {
+          "title": "The greedy matching loop",
+          "startLine": 43,
+          "endLine": 55,
+          "anchor": "const payments = [];",
+          "explanation": "Two pointers walk the lists. Each round, the biggest debtor pays the biggest creditor as much as possible (`Math.min` of the two). Whoever reaches zero is skipped. Every payment clears at least one person, so four roommates never need more than three payments.",
+          "concepts": ["pure-functions"]
+        }
+      ]
+    },
+    {
+      "path": "src/data/sampleGroup.js",
+      "role": "Seed data",
+      "summary": "A realistic starter room so the app is useful on first launch, plus the empty shape of a group.",
+      "sections": [
+        {
+          "title": "Dates relative to now",
+          "startLine": 3,
+          "endLine": 4,
+          "anchor": "const DAY = 24 * 60 * 60 * 1000;",
+          "explanation": "`daysAgo(2)` subtracts two days of milliseconds from `Date.now()` and stores an ISO string. The sample activity therefore always reads “Yesterday” or “2 days ago”, whenever the app runs.",
+          "concepts": ["dates"]
+        },
+        {
+          "title": "A realistic starter room",
+          "startLine": 6,
+          "endLine": 22,
+          "anchor": "export const sampleGroup = {",
+          "explanation": "The sample data has exactly the same shape the app saves: members, expenses (amounts in paise, `paidBy` and `splitBetween` referencing member ids) and settlements. Referencing ids rather than names means renaming a person later would update everywhere.",
+          "concepts": ["data-modeling"]
+        },
+        {
+          "title": "The empty shape",
+          "startLine": 24,
+          "endLine": 31,
+          "anchor": "// What a brand-new group looks like before anything is loaded.",
+          "explanation": "The reducer starts from `emptyGroup` and merges loaded data on top, so an older saved file that's missing a field still gets a sensible default.",
+          "concepts": ["data-modeling"]
+        }
+      ]
+    },
+    {
+      "path": "src/context/GroupContext.js",
+      "role": "State (Context + reducer)",
+      "summary": "Owns the room's data: a reducer for every change, loading and saving with AsyncStorage, and the useGroup/useBalances hooks.",
+      "sections": [
+        {
+          "title": "The reducer: every change is an action",
+          "startLine": 8,
+          "endLine": 29,
+          "anchor": "// Every change to the group is described by an action object and handled",
+          "explanation": "A reducer is a pure function `(state, action) => newState`. Each `case` returns a **new** object with spread syntax (`{ ...state, expenses: [...] }`) instead of mutating — that's how React knows something changed. All the ways the data can change are listed in one place, which makes bugs easy to trace.",
+          "concepts": ["use-reducer", "immutability"]
+        },
+        {
+          "title": "Loading once on startup",
+          "startLine": 38,
+          "endLine": 55,
+          "anchor": "// 1) Load the saved group once, falling back to sample data.",
+          "explanation": "An effect with an empty dependency array runs once. It reads the saved JSON, falls back to the sample room if nothing is saved or parsing fails, and dispatches `loaded`. The `cancelled` flag avoids updating state if the component unmounts before storage answers.",
+          "concepts": ["use-effect", "async-storage", "error-handling"]
+        },
+        {
+          "title": "Saving after every change",
+          "startLine": 57,
+          "endLine": 64,
+          "anchor": "// 2) Save after every change, but never before the first load has finished.",
+          "explanation": "This effect runs whenever `state` changes. The `isLoading` guard is essential: without it the first render would save the empty group over your real data. `isLoading` is stripped out with rest syntax because it's UI state, not data.",
+          "concepts": ["async-storage", "json-serialization"]
+        },
+        {
+          "title": "Action creators and the provider value",
+          "startLine": 66,
+          "endLine": 87,
+          "anchor": "// Action creators: screens call addExpense(...) instead of building actions.",
+          "explanation": "Screens call friendly functions like `settleUp(payment)` instead of building action objects. The functions are created once (`useMemo` with `[]`), and the context value is only rebuilt when `state` changes, so consumers don't re-render needlessly.",
+          "concepts": ["context", "use-memo"]
+        },
+        {
+          "title": "Hooks for screens",
+          "startLine": 89,
+          "endLine": 103,
+          "anchor": "export function useGroup() {",
+          "explanation": "`useGroup()` wraps `useContext` and throws a clear error if used outside the provider. `useBalances()` is **derived data**: it recalculates balances from the history with `useMemo`, only when members, expenses or payments change.",
+          "concepts": ["custom-hooks", "use-memo"]
+        }
+      ]
+    },
+    {
+      "path": "src/components/Avatar.js",
+      "role": "Presentational component",
+      "summary": "Draws a coloured circle with a member's initial.",
+      "sections": [
+        {
+          "title": "Props with defaults",
+          "startLine": 6,
+          "endLine": 19,
+          "anchor": "export default function Avatar({ member, size = 40 }) {",
+          "explanation": "`size = 40` is a default value for an optional prop. Width, height, border radius and font size are all computed from `size`, so the same component works as a tiny chip icon (22) or a list avatar (44). Adding `'22'` to a hex colour makes a translucent background.",
+          "concepts": ["props", "components"]
+        },
+        {
+          "title": "A stable colour per person",
+          "startLine": 21,
+          "endLine": 25,
+          "anchor": "function colorFor(id) {",
+          "explanation": "A tiny hash turns the member's id into a number, which picks a colour from `avatarColors`. The same id always gives the same colour, without storing it anywhere.",
+          "concepts": ["pure-functions"]
+        }
+      ]
+    },
+    {
+      "path": "src/components/TabBar.js",
+      "role": "Navigation component",
+      "summary": "Draws the bottom tabs and reports taps back to App.js.",
+      "sections": [
+        {
+          "title": "Safe-area aware container",
+          "startLine": 8,
+          "endLine": 12,
+          "anchor": "export default function TabBar({ tabs, activeTab, onChange }) {",
+          "explanation": "`useSafeAreaInsets()` tells us how tall the home indicator is on modern iPhones, so the tabs are padded above it. The component owns no state: `activeTab` comes in, taps go out through `onChange`.",
+          "concepts": ["safe-area", "props"]
+        },
+        {
+          "title": "One Pressable per tab",
+          "startLine": 13,
+          "endLine": 28,
+          "anchor": "{tabs.map((tab) => {",
+          "explanation": "Each tab picks a filled or outline icon depending on whether it's active. `accessibilityRole=\"tab\"` and `accessibilityState` let screen readers announce “Balances, tab, selected”.",
+          "concepts": ["pressable", "accessibility"]
+        }
+      ]
+    },
+    {
+      "path": "src/screens/BalancesScreen.js",
+      "role": "Screen",
+      "summary": "The home tab: your balance, settle-up suggestions with a Mark paid action, and everyone's position.",
+      "sections": [
+        {
+          "title": "Reading shared state",
+          "startLine": 11,
+          "endLine": 18,
+          "anchor": "export default function BalancesScreen() {",
+          "explanation": "The screen takes everything it needs from context — no props at all. `byId` turns the member array into a lookup object, and `totalSpent` is summed with `reduce` on each render.",
+          "concepts": ["context", "array-methods"]
+        },
+        {
+          "title": "Confirm before changing data",
+          "startLine": 20,
+          "endLine": 33,
+          "anchor": "function confirmPayment(payment) {",
+          "explanation": "Recording money is important, so `Alert.alert` asks first. The second button's `onPress` records the payment through `settleUp` and triggers a success haptic on phones.",
+          "concepts": ["modal-alert"]
+        },
+        {
+          "title": "The gradient balance card",
+          "startLine": 41,
+          "endLine": 50,
+          "anchor": "<LinearGradient colors={[colors.primary, colors.primaryDark]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.hero}>",
+          "explanation": "The label switches between “You get back”, “You owe” and “You are all square” with a chained ternary. The amount always shows the absolute value — the label carries the direction.",
+          "concepts": ["conditional-rendering", "stylesheet"]
+        },
+        {
+          "title": "Settle-up suggestions",
+          "startLine": 52,
+          "endLine": 82,
+          "anchor": "<Text style={styles.section}>Settle up</Text>",
+          "explanation": "If there are no payments to make, a celebratory empty state shows; otherwise each suggestion becomes a card with both avatars and a Mark paid button. The key combines both ids because each pair appears at most once.",
+          "concepts": ["conditional-rendering", "accessibility"]
+        },
+        {
+          "title": "Everyone's balance",
+          "startLine": 84,
+          "endLine": 103,
+          "anchor": "<Text style={styles.section}>Everyone</Text>",
+          "explanation": "A simple `map` renders one row per member. Positive balances are green (to receive), negative ones red (to pay).",
+          "concepts": ["array-methods"]
+        }
+      ]
+    },
+    {
+      "path": "src/screens/ActivityScreen.js",
+      "role": "Screen",
+      "summary": "A filterable timeline mixing expenses and payments, with long-press to delete.",
+      "sections": [
+        {
+          "title": "One timeline with useMemo",
+          "startLine": 17,
+          "endLine": 25,
+          "anchor": "// One timeline with both expenses and payments, newest first. useMemo",
+          "explanation": "Expenses are filtered by category and tagged `kind: 'expense'`; payments are only shown for *All*. ISO date strings sort correctly as plain text, so `localeCompare` orders the merged list newest first. `useMemo` skips all of this unless the inputs change.",
+          "concepts": ["use-memo", "array-methods"]
+        },
+        {
+          "title": "Delete with confirmation",
+          "startLine": 29,
+          "endLine": 41,
+          "anchor": "function confirmDelete(item) {",
+          "explanation": "The same function handles both kinds of item and calls the matching action. `style: 'destructive'` shows the Delete button in red on iOS.",
+          "concepts": ["modal-alert"]
+        },
+        {
+          "title": "FlatList with header and empty state",
+          "startLine": 45,
+          "endLine": 89,
+          "anchor": "<FlatList",
+          "explanation": "`FlatList` only renders the rows that are on screen. The title and filter chips live in `ListHeaderComponent` so they scroll with the list, and `ListEmptyComponent` explains what to do when there's nothing to show.",
+          "concepts": ["flatlist", "conditional-rendering"]
+        },
+        {
+          "title": "What an expense means for you",
+          "startLine": 94,
+          "endLine": 100,
+          "anchor": "function ExpenseItem({ expense, currentUserId, nameOf, onLongPress }) {",
+          "explanation": "Your effect is what you paid minus your share: pay ₹2,400 for a four-way bill and you *lent* ₹1,800. This is the same maths as `computeBalances`, applied to one expense.",
+          "concepts": ["pure-functions"]
+        },
+        {
+          "title": "Friendly relative dates",
+          "startLine": 140,
+          "endLine": 150,
+          "anchor": "// \"Today\", \"Yesterday\", \"3 days ago\" or \"12 Sep\".",
+          "explanation": "Both dates are reset to midnight with `setHours(0, 0, 0, 0)` before comparing, so an expense from 11 pm yesterday still reads “Yesterday”. `Math.round` absorbs daylight-saving hour shifts.",
+          "concepts": ["dates"]
+        }
+      ]
+    },
+    {
+      "path": "src/screens/RoommatesScreen.js",
+      "role": "Screen",
+      "summary": "Adds roommates with validation and only lets you remove people who are settled up.",
+      "sections": [
+        {
+          "title": "Validating a new name",
+          "startLine": 18,
+          "endLine": 31,
+          "anchor": "function handleAdd() {",
+          "explanation": "Two checks run before anything is saved: the name must have at least two letters, and it can't duplicate an existing member (compared case-insensitively). On success the input is cleared.",
+          "concepts": ["form-validation"]
+        },
+        {
+          "title": "Guarding removal",
+          "startLine": 33,
+          "endLine": 47,
+          "anchor": "function handleRemove(member) {",
+          "explanation": "If a member still owes or is owed money, removing them would make that money vanish from everyone's balances. The screen explains this instead of allowing it, then asks for confirmation when it's safe.",
+          "concepts": ["modal-alert", "data-modeling"]
+        },
+        {
+          "title": "A controlled input",
+          "startLine": 58,
+          "endLine": 71,
+          "anchor": "<TextInput",
+          "explanation": "`value={newName}` plus `onChangeText` makes the input *controlled*: state is the single source of truth. Typing also clears a stale error, and pressing return submits via `onSubmitEditing`.",
+          "concepts": ["text-input"]
+        },
+        {
+          "title": "Accessible remove button",
+          "startLine": 99,
+          "endLine": 109,
+          "anchor": "{!isMe && (",
+          "explanation": "You can't remove yourself, so the button only renders for others. An icon-only button needs an `accessibilityLabel` like “Remove Diya” — otherwise a screen reader would just say “button”.",
+          "concepts": ["accessibility", "conditional-rendering"]
+        }
+      ]
+    },
+    {
+      "path": "src/screens/AddExpenseScreen.js",
+      "role": "Form screen",
+      "summary": "A validated form for a new expense with a live split preview.",
+      "sections": [
+        {
+          "title": "Controlled form state",
+          "startLine": 12,
+          "endLine": 18,
+          "anchor": "// Controlled form: every input shows what's in state, and typing updates state.",
+          "explanation": "Each field has its own `useState`. The amount is kept as **text** while typing (so “12.” is allowed) and only parsed into paise when needed. By default you paid and everyone shares.",
+          "concepts": ["text-input", "use-state"]
+        },
+        {
+          "title": "Validation derived from state",
+          "startLine": 20,
+          "endLine": 30,
+          "anchor": "// Validation is derived from state, so errors update as the user types.",
+          "explanation": "Errors aren't stored — they're computed on every render from the current values. `isValid` then drives the disabled look of both Save buttons. The preview shares come from the same `splitEvenly` used for balances.",
+          "concepts": ["form-validation"]
+        },
+        {
+          "title": "Toggling who shares the cost",
+          "startLine": 32,
+          "endLine": 37,
+          "anchor": "function toggleMember(id) {",
+          "explanation": "The updater function receives the current selection and returns a **new** array rebuilt from the member list, so the order is always the room's order — and so is who covers an odd paisa.",
+          "concepts": ["immutability", "array-methods"]
+        },
+        {
+          "title": "Errors only after the first submit",
+          "startLine": 39,
+          "endLine": 43,
+          "anchor": "function handleSave() {",
+          "explanation": "`submitted` flips to true on the first save, which reveals the error messages. Showing red text before someone has typed anything feels hostile; showing it after they try is helpful.",
+          "concepts": ["form-validation"]
+        },
+        {
+          "title": "Live split preview",
+          "startLine": 146,
+          "endLine": 154,
+          "anchor": "{shares.length > 0 && (",
+          "explanation": "As soon as there's a valid amount and at least one person, the preview shows the per-person share, and mentions when a few people pay a paisa more so the total stays exact.",
+          "concepts": ["conditional-rendering"]
+        }
+      ]
+    }
+  ],
+  "glossary": [
+    { "term": "Context", "definition": "A way to make a value available to every component inside a provider, without passing props through each layer." },
+    { "term": "Reducer", "definition": "A pure function that takes the current state and an action and returns the next state." },
+    { "term": "Action", "definition": "A plain object like { type: 'addExpense', expense } that describes what happened." },
+    { "term": "Dispatch", "definition": "The function useReducer gives you to send an action to the reducer." },
+    { "term": "Derived data", "definition": "Values computed from state (like balances) instead of stored separately, so they can never be out of date." },
+    { "term": "Paise", "definition": "1/100 of a rupee. Storing money as integer paise keeps every sum exact." },
+    { "term": "Greedy algorithm", "definition": "An approach that makes the best local choice at each step — here, matching the biggest debtor with the biggest creditor." },
+    { "term": "Controlled input", "definition": "A TextInput whose value always comes from state and whose changes go back into state." },
+    { "term": "Zero-sum", "definition": "All balances add up to zero: what some people are owed, others owe." }
+  ]
+}

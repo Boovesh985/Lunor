@@ -1,0 +1,12 @@
+node_modules
+dist
+public/preview/runtime.js
+public/preview/runtime.js.map
+.env
+.env.local
+.env.*.local
+.vercel
+*.log
+.DS_Store
+coverage
+.claude

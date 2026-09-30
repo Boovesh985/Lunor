@@ -1,0 +1,177 @@
+{
+  "summary": "A single-room expense ledger built with React Native and Expo. All group data lives in one Context backed by a useReducer, pure utility functions do the money maths, and AsyncStorage persists the ledger on the device. Three tabs (Balances, Activity, Roommates) plus an Add-expense modal read and change that shared state.",
+  "techStack": [
+    { "name": "React Native + Expo", "category": "Framework", "reason": "One JavaScript codebase for Android and iOS, testable instantly in Expo Go." },
+    { "name": "JavaScript (ES2022)", "category": "Language", "reason": "Modern syntax like optional chaining and object spread keeps reducer updates short." },
+    { "name": "Context + useReducer", "category": "State", "reason": "Four screens share the same group data, and every change is a named action that is easy to follow." },
+    { "name": "AsyncStorage", "category": "Storage", "reason": "Saves the whole ledger as JSON on the device, so it survives restarts without a backend." },
+    { "name": "@expo/vector-icons (Ionicons)", "category": "Icons", "reason": "Recognisable category and tab icons with no image assets." },
+    { "name": "expo-linear-gradient + expo-haptics", "category": "UI", "reason": "A polished balance card and tactile feedback when a payment is recorded." }
+  ],
+  "screens": [
+    {
+      "id": "balances",
+      "name": "Balances",
+      "purpose": "Your balance at a glance, suggested payments to settle up and everyone's position.",
+      "kind": "tab",
+      "components": ["Gradient balance card", "Settle-up suggestion cards", "Mark paid button with confirmation", "Member balance list", "Add expense button"],
+      "navigatesTo": [
+        { "screenId": "addExpense", "trigger": "Tap Add expense" },
+        { "screenId": "activity", "trigger": "Tap the Activity tab" }
+      ]
+    },
+    {
+      "id": "activity",
+      "name": "Activity",
+      "purpose": "Timeline of every expense and payment, filterable by category.",
+      "kind": "tab",
+      "components": ["Category filter chips", "FlatList of expenses and payments", "You lent / you borrowed labels", "Long-press to delete", "Empty state"],
+      "navigatesTo": [
+        { "screenId": "addExpense", "trigger": "Tap Add expense" },
+        { "screenId": "roommates", "trigger": "Tap the Roommates tab" }
+      ]
+    },
+    {
+      "id": "roommates",
+      "name": "Roommates",
+      "purpose": "Add people to the room and remove them once they are settled up.",
+      "kind": "tab",
+      "components": ["Name input with validation", "Member list with balances", "Remove button with guard", "Tip card"],
+      "navigatesTo": [{ "screenId": "balances", "trigger": "Tap the Balances tab" }]
+    },
+    {
+      "id": "addExpense",
+      "name": "Add expense",
+      "purpose": "A validated form to log a new shared expense.",
+      "kind": "modal",
+      "components": ["Large amount input", "Description input", "Category chips", "Paid by selector", "Split between checkboxes", "Live split preview"],
+      "navigatesTo": [{ "screenId": "balances", "trigger": "Save or cancel" }]
+    }
+  ],
+  "navigation": {
+    "pattern": "Bottom tabs + modal",
+    "description": "AppShell keeps the active tab and whether the add sheet is open in useState; a custom TabBar switches tabs and a React Native Modal presents the form."
+  },
+  "dataModel": [
+    {
+      "entity": "Member",
+      "description": "A person in the room.",
+      "fields": [
+        { "name": "id", "type": "string", "description": "Stable unique id, used as the key everywhere else." },
+        { "name": "name", "type": "string", "description": "Display name; \"You\" for the phone's owner." }
+      ],
+      "relations": []
+    },
+    {
+      "entity": "Expense",
+      "description": "Something one member paid for on behalf of some or all of the room.",
+      "fields": [
+        { "name": "id", "type": "string", "description": "Unique id for list keys and deletion." },
+        { "name": "title", "type": "string", "description": "What it was for, e.g. \"Wi-Fi recharge\"." },
+        { "name": "amount", "type": "number (paise)", "description": "Whole paise — an integer, so sums never have rounding errors." },
+        { "name": "category", "type": "string", "description": "One of the category ids in the theme." },
+        { "name": "paidBy", "type": "string (Member.id)", "description": "Who fronted the money." },
+        { "name": "splitBetween", "type": "string[] (Member.id)", "description": "Who shares the cost equally, in member order." },
+        { "name": "createdAt", "type": "string (ISO date)", "description": "When it was added; used for sorting and labels." }
+      ],
+      "relations": ["Expense.paidBy → Member.id", "Expense.splitBetween → Member.id"]
+    },
+    {
+      "entity": "Settlement",
+      "description": "A payment one member made to another to settle up.",
+      "fields": [
+        { "name": "id", "type": "string", "description": "Unique id." },
+        { "name": "from", "type": "string (Member.id)", "description": "Who paid." },
+        { "name": "to", "type": "string (Member.id)", "description": "Who received the money." },
+        { "name": "amount", "type": "number (paise)", "description": "How much was paid." },
+        { "name": "createdAt", "type": "string (ISO date)", "description": "When it was recorded." }
+      ],
+      "relations": ["Settlement.from → Member.id", "Settlement.to → Member.id"]
+    }
+  ],
+  "stateManagement": {
+    "approach": "Context + useReducer (GroupContext)",
+    "description": "GroupProvider owns the whole group in a reducer; screens call named actions like addExpense or settleUp through useGroup(). Balances are derived with useMemo in useBalances(), never stored."
+  },
+  "persistence": {
+    "approach": "AsyncStorage (JSON)",
+    "description": "The provider loads the saved group on startup (falling back to sample data) and saves the entire ledger after every change, but only once loading has finished."
+  },
+  "architecture": [
+    { "layer": "Screens", "description": "Full-page views that read the group and call actions.", "files": ["src/screens/BalancesScreen.js", "src/screens/ActivityScreen.js", "src/screens/RoommatesScreen.js", "src/screens/AddExpenseScreen.js"] },
+    { "layer": "Components", "description": "Reusable building blocks shared by screens.", "files": ["src/components/Avatar.js", "src/components/TabBar.js"] },
+    { "layer": "State", "description": "Context provider, reducer, persistence and derived balances.", "files": ["src/context/GroupContext.js"] },
+    { "layer": "Logic", "description": "Pure functions for money formatting, splitting and settling.", "files": ["src/utils/money.js", "src/utils/balances.js"] },
+    { "layer": "Data & design", "description": "Sample group and design tokens.", "files": ["src/data/sampleGroup.js", "src/theme.js"] }
+  ],
+  "files": [
+    { "path": "src/theme.js", "purpose": "Colours, spacing, typography and the expense categories.", "kind": "theme" },
+    { "path": "src/utils/money.js", "purpose": "Parse, format and split amounts stored as integer paise.", "kind": "util" },
+    { "path": "src/utils/balances.js", "purpose": "Compute net balances and the fewest settle-up payments.", "kind": "util" },
+    { "path": "src/data/sampleGroup.js", "purpose": "Starter room with members, expenses and a payment.", "kind": "data" },
+    { "path": "src/context/GroupContext.js", "purpose": "Reducer, provider, persistence and the useGroup/useBalances hooks.", "kind": "context" },
+    { "path": "src/components/Avatar.js", "purpose": "Coloured initial bubble for a member.", "kind": "component" },
+    { "path": "src/components/TabBar.js", "purpose": "Bottom tab bar with icons.", "kind": "component" },
+    { "path": "src/screens/BalancesScreen.js", "purpose": "Balance card, settle-up suggestions and member balances.", "kind": "screen" },
+    { "path": "src/screens/ActivityScreen.js", "purpose": "Filterable timeline of expenses and payments.", "kind": "screen" },
+    { "path": "src/screens/RoommatesScreen.js", "purpose": "Add and remove roommates safely.", "kind": "screen" },
+    { "path": "src/screens/AddExpenseScreen.js", "purpose": "Validated form for a new expense.", "kind": "screen" },
+    { "path": "App.js", "purpose": "Providers, tab navigation, the add button and the modal.", "kind": "entry" }
+  ],
+  "buildSteps": [
+    {
+      "id": "foundations",
+      "title": "Tokens and money maths",
+      "description": "Start with the design tokens and the money helpers. Storing paise as integers from day one avoids a whole class of rounding bugs.",
+      "files": ["src/theme.js", "src/utils/money.js"],
+      "concepts": ["design-tokens", "pure-functions", "data-modeling"]
+    },
+    {
+      "id": "algorithm",
+      "title": "Balances and settle-up algorithm",
+      "description": "Write the balance calculation and greedy settle-up as pure functions, plus sample data to exercise them.",
+      "files": ["src/utils/balances.js", "src/data/sampleGroup.js"],
+      "concepts": ["pure-functions", "array-methods", "data-modeling"]
+    },
+    {
+      "id": "state",
+      "title": "Shared state with Context",
+      "description": "A reducer handles every change as an action; the provider loads and saves the ledger and exposes useGroup and useBalances.",
+      "files": ["src/context/GroupContext.js"],
+      "concepts": ["use-reducer", "context", "async-storage"]
+    },
+    {
+      "id": "components",
+      "title": "Reusable components",
+      "description": "Avatar and TabBar are small presentational components used across screens.",
+      "files": ["src/components/Avatar.js", "src/components/TabBar.js"],
+      "concepts": ["components", "props", "vector-icons"]
+    },
+    {
+      "id": "screens",
+      "title": "Build the four screens",
+      "description": "Balances, Activity and Roommates read the shared state; the Add-expense form validates input before dispatching.",
+      "files": ["src/screens/BalancesScreen.js", "src/screens/ActivityScreen.js", "src/screens/RoommatesScreen.js", "src/screens/AddExpenseScreen.js"],
+      "concepts": ["flatlist", "text-input", "form-validation", "modal-alert"]
+    },
+    {
+      "id": "wire-up",
+      "title": "Wire up navigation",
+      "description": "App.js wraps everything in the providers and switches tabs and the modal with plain state.",
+      "files": ["App.js"],
+      "concepts": ["navigation-state", "tab-bar", "safe-area"]
+    }
+  ],
+  "risks": [
+    { "risk": "Floating-point rounding makes balances drift by a paisa.", "mitigation": "Store integer paise and split with splitEvenly so shares always add up to the total." },
+    { "risk": "Deleting a roommate with an open balance makes money disappear.", "mitigation": "Block removal until their balance is zero and explain why in an alert." },
+    { "risk": "Stored balances get out of sync with the history.", "mitigation": "Never store balances; derive them from expenses and payments with useMemo." },
+    { "risk": "Only one phone has the data.", "mitigation": "Make this explicit in the scope note; add a backend with sync after the MVP." }
+  ],
+  "futureIdeas": [
+    "Sync the room across everyone's phone with a backend such as Supabase or Firebase",
+    "Unequal splits by exact amounts or percentages",
+    "One-tap UPI payment requests from settle-up suggestions",
+    "Monthly spending summary by category"
+  ]
+}

@@ -1,0 +1,14 @@
+[
+  {
+    "question": "Why do we need useEffect to load the habits?",
+    "answer": "Reading from **AsyncStorage** is *asynchronous* — the data isn't available at the exact moment the component first renders. `useEffect` lets you say \"after you've drawn the screen, go do this side job\".\n\nIn `src/hooks/useHabits.js:15`, the effect has an empty dependency array `[]`, so it runs **once** when the app starts:\n\n1. The first render shows a spinner (`isLoading` is `true`).\n2. The effect reads the saved JSON and calls `setHabits(...)`.\n3. React re-renders with your real habits.\n\n**Try it:** in the preview, check off a habit, then press the reload button. Your change is still there — the load effect brought it back from storage."
+  },
+  {
+    "question": "How does the streak get calculated?",
+    "answer": "Look at `calculateStreak` in `src/utils/dates.js:24`.\n\n- It puts all completed dates into a **Set** for fast lookups.\n- It starts from **today** if today is done, otherwise from **yesterday** (so an unfinished day doesn't break the streak).\n- It keeps stepping back one day at a time while each day is in the Set, counting as it goes.\n\nBecause dates are stored as `YYYY-MM-DD` strings, comparing days is just comparing strings — no time-zone headaches.\n\n**Try it:** tap “Morning run” to check it off and watch its streak text change."
+  },
+  {
+    "question": "What's the difference between props and state?",
+    "answer": "**State** is data a component *owns* and can change (`useState`). **Props** are data a component *receives* from its parent and must not change.\n\nIn HabitHero:\n- `habits` is **state** inside `useHabits` (`src/hooks/useHabits.js:11`).\n- `App.js` passes it down as a **prop** to `TodayScreen`, which passes each item to `HabitCard` as the `habit` prop.\n- When a card is tapped it can't edit the habit — it calls the `onToggle` prop, and the owner of the state makes the change.\n\nThis \"data down, actions up\" pattern is what keeps React apps predictable."
+  }
+]

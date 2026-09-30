@@ -1,0 +1,14 @@
+[
+  {
+    "question": "How does the settle-up algorithm decide who pays whom?",
+    "answer": "It's a **greedy** algorithm in `src/utils/balances.js:33`.\n\n1. `computeBalances` works out everyone's net position: positive means the room owes them, negative means they owe the room. The numbers always add up to zero.\n2. `suggestSettlements` splits people into **debtors** and **creditors** and sorts both lists largest first.\n3. The biggest debtor pays the biggest creditor `Math.min(debt, credit)`. Whoever hits zero drops out, and the loop repeats.\n\nEvery payment settles at least one person, so four roommates need **at most three** payments.\n\n**Try it:** on the Balances tab, tap *Mark paid* on the first suggestion and watch the remaining suggestions shrink."
+  },
+  {
+    "question": "Why use useReducer instead of useState here?",
+    "answer": "With `useState` you'd need a setter for members, expenses and settlements, and each screen would have to know how to update them correctly.\n\nWith `useReducer` (`src/context/GroupContext.js:10`), every change is an **action** like `{ type: 'settleUp', payment }`, and one pure function decides what the new state is. That gives you:\n\n- **One place** that lists every possible change\n- Screens that call intent-revealing functions (`settleUp`, `addMember`) instead of juggling arrays\n- Logic you can test without rendering anything\n\nRule of thumb: when several pieces of state change together, or the update logic is more than a line, reach for a reducer."
+  },
+  {
+    "question": "What happens to old expenses when a roommate moves out?",
+    "answer": "Removing is only allowed once someone's balance is **exactly zero** (`src/screens/RoommatesScreen.js:33`), so no money ever disappears.\n\nTheir old expenses stay in the history, and the activity feed shows them as *Former roommate*. `computeBalances` skips ids that aren't members any more, and because their net was zero, everyone else's balances stay exactly the same.\n\nIf you add them back, they get a **new id** — so they start fresh rather than inheriting old history. To bring back the same person, you'd store an `archived: true` flag instead of deleting them. That makes a nice extension to try!"
+  }
+]

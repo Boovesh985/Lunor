@@ -1,0 +1,10 @@
+{
+  "id": "split-mate",
+  "title": "SplitMate",
+  "emoji": "💸",
+  "level": "intermediate",
+  "idea": "An app for hostel roommates to split shared expenses like groceries, electricity and Wi-Fi, and see who owes whom.",
+  "description": "Shared expenses, live balances and one-tap settle-up suggestions for a hostel room.",
+  "accent": "#2563EB",
+  "tags": ["Context + useReducer", "Settle-up algorithm", "Integer money", "Forms"]
+}

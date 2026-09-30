@@ -1,0 +1,231 @@
+{
+  "headline": "Building HabitHero taught you how data flows in a real app: from storage, into state, onto the screen — and back again when you tap.",
+  "concepts": [
+    {
+      "conceptId": "components",
+      "explanation": "Your app is a tree of components. App.js composes screens, screens compose cards, and each component is just a function that returns JSX. HabitCard knows how to draw one habit — nothing more.",
+      "whyItMatters": "Small components are easier to read, reuse and fix — every production React Native codebase is organised this way.",
+      "codeRefs": [
+        { "file": "src/components/HabitCard.js", "startLine": 6, "endLine": 8, "anchor": "export default function HabitCard({ habit, onToggle, onDelete }) {", "note": "A component is a function that receives props." },
+        { "file": "src/screens/StatsScreen.js", "startLine": 67, "endLine": 76, "anchor": "// A small component that only this screen uses can live in the same file.", "note": "Even a tiny stat card is its own component." }
+      ],
+      "practiceTip": "Extract the empty state in TodayScreen into its own `EmptyState` component that takes `emoji`, `title` and `text` props."
+    },
+    {
+      "conceptId": "props",
+      "explanation": "Props carry data down (the `habit` object) and callbacks up (`onToggle`). HabitCard never changes a habit itself — it asks its parent to, by calling the function it was given.",
+      "whyItMatters": "This one-way data flow is why React apps stay predictable as they grow.",
+      "codeRefs": [
+        { "file": "src/screens/TodayScreen.js", "startLine": 28, "endLine": 28, "anchor": "renderItem={({ item }) => <HabitCard habit={item} onToggle={onToggle} onDelete={onDelete} />}", "note": "Passing data and callbacks into each card." },
+        { "file": "src/components/HabitCard.js", "startLine": 19, "endLine": 21, "anchor": "<Pressable", "note": "The card calls the callback it received." }
+      ],
+      "practiceTip": "Add a `compact` boolean prop to HabitCard that hides the streak line, and pass it from TodayScreen."
+    },
+    {
+      "conceptId": "design-tokens",
+      "explanation": "All colours, spacing and text styles live in theme.js and are imported everywhere. Components describe *intent* (`colors.primary`) instead of raw values.",
+      "whyItMatters": "Design tokens make rebrands, dark mode and consistent UI cheap — change one file, restyle the app.",
+      "codeRefs": [
+        { "file": "src/theme.js", "startLine": 4, "endLine": 14, "anchor": "export const colors = {", "note": "Colours are named by purpose." }
+      ],
+      "practiceTip": "Change `colors.primary` to `'#E11D48'` and watch the FAB, progress card and active tab all update together."
+    },
+    {
+      "conceptId": "flexbox",
+      "explanation": "Every View is a flex container. HabitCard uses `flexDirection: 'row'` to line up badge, text and icon, and `flex: 1` on the text so it takes all the remaining space.",
+      "whyItMatters": "Flexbox is how every React Native layout adapts to different phone sizes.",
+      "codeRefs": [
+        { "file": "src/components/HabitCard.js", "startLine": 48, "endLine": 57, "anchor": "card: {", "note": "A row with centred items." },
+        { "file": "src/components/HabitCard.js", "startLine": 77, "endLine": 80, "anchor": "info: {", "note": "flex: 1 fills the gap between badge and icon." }
+      ],
+      "practiceTip": "Temporarily remove `flex: 1` from `info` and see how long habit names push the check icon off screen."
+    },
+    {
+      "conceptId": "flatlist",
+      "explanation": "TodayScreen renders habits with FlatList, which only draws the rows currently visible. It also gives you a header and an empty state for free.",
+      "whyItMatters": "Lists are everywhere in mobile apps; FlatList keeps them smooth even with thousands of items.",
+      "codeRefs": [
+        { "file": "src/screens/TodayScreen.js", "startLine": 25, "endLine": 46, "anchor": "<FlatList", "note": "data + keyExtractor + renderItem are the three essentials." }
+      ],
+      "practiceTip": "Add `ItemSeparatorComponent={() => <View style={{ height: 4 }} />}` and remove the card's marginBottom."
+    },
+    {
+      "conceptId": "use-state",
+      "explanation": "useState gives a component memory. AddHabitScreen keeps four pieces of state — name, emoji, colour and error — and every change re-renders the form and its live preview.",
+      "whyItMatters": "State is the heart of interactivity: anything that changes on screen is driven by state.",
+      "codeRefs": [
+        { "file": "src/screens/AddHabitScreen.js", "startLine": 11, "endLine": 14, "anchor": "const [name, setName] = useState('');", "note": "One useState per piece of form data." }
+      ],
+      "practiceTip": "Add a fifth piece of state, `note`, with a second TextInput, and show it on the preview card."
+    },
+    {
+      "conceptId": "form-validation",
+      "explanation": "handleSave trims the name and refuses to save anything shorter than two characters, storing a friendly message in state instead. Typing again clears the error.",
+      "whyItMatters": "Validating early prevents bad data from ever reaching your storage.",
+      "codeRefs": [
+        { "file": "src/screens/AddHabitScreen.js", "startLine": 16, "endLine": 23, "anchor": "function handleSave() {", "note": "Validate first, then call onSave." },
+        { "file": "src/screens/AddHabitScreen.js", "startLine": 49, "endLine": 61, "anchor": "<TextInput", "note": "A controlled input that clears the error while typing." }
+      ],
+      "practiceTip": "Prevent duplicates: show an error if a habit with the same name already exists (you'll need to pass `habits` in as a prop)."
+    },
+    {
+      "conceptId": "custom-hooks",
+      "explanation": "useHabits bundles state, effects and actions into one reusable function. App.js just calls it and gets back data plus verbs — the screens never see storage code.",
+      "whyItMatters": "Custom hooks are how professional teams share logic between components without copy-pasting.",
+      "codeRefs": [
+        { "file": "src/hooks/useHabits.js", "startLine": 10, "endLine": 12, "anchor": "export function useHabits() {", "note": "A hook is a function that uses other hooks." },
+        { "file": "src/hooks/useHabits.js", "startLine": 71, "endLine": 71, "anchor": "return { habits, isLoading, addHabit, toggleHabit, deleteHabit };", "note": "The hook's public API." }
+      ],
+      "practiceTip": "Add a `renameHabit(id, newName)` action to the hook and return it alongside the others."
+    },
+    {
+      "conceptId": "async-storage",
+      "explanation": "Two effects keep AsyncStorage in sync: one loads the saved list once at startup, the other saves the whole list as JSON whenever it changes. try/catch falls back to sample data if storage is empty or broken.",
+      "whyItMatters": "Persisting data is what turns a demo into an app people rely on every day.",
+      "codeRefs": [
+        { "file": "src/hooks/useHabits.js", "startLine": 15, "endLine": 28, "anchor": "useEffect(() => {", "note": "Load once: an effect with an empty dependency array." },
+        { "file": "src/hooks/useHabits.js", "startLine": 32, "endLine": 37, "anchor": "useEffect(() => {", "note": "Save whenever habits change." }
+      ],
+      "practiceTip": "Use the preview's “Reset app data” button, then reload: the sample habits come back because storage is empty."
+    },
+    {
+      "conceptId": "immutability",
+      "explanation": "Every action builds a new array instead of editing the old one: spread to add, map to toggle, filter to delete. React compares references, so a new array is how it knows something changed.",
+      "whyItMatters": "Mutating state is the #1 cause of \"my screen didn't update\" bugs in React.",
+      "codeRefs": [
+        { "file": "src/hooks/useHabits.js", "startLine": 52, "endLine": 65, "anchor": "const toggleHabit = useCallback((id, dateKey = toDateKey()) => {", "note": "map returns a new array with one updated habit." }
+      ],
+      "practiceTip": "Write a `resetToday` action that removes today's date from every habit's completedDates — without mutating anything."
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "question": "Why does the save effect start with `if (isLoading) return;`?",
+      "codeRef": { "file": "src/hooks/useHabits.js", "startLine": 32, "endLine": 37, "anchor": "useEffect(() => {", "note": "The save effect." },
+      "options": [
+        "Because AsyncStorage can't be used while fonts are loading",
+        "To make the app start faster",
+        "To avoid overwriting saved habits with the empty starting list",
+        "Because useEffect never runs on the first render"
+      ],
+      "answerIndex": 2,
+      "explanation": "On the first render `habits` is still `[]`. Without the check, the effect would save that empty list before the load finished — wiping the user's real data.",
+      "conceptId": "async-storage"
+    },
+    {
+      "id": "q2",
+      "question": "What could go wrong if toggleHabit did `habit.completedDates.push(today)` and returned the same array?",
+      "codeRef": { "file": "src/hooks/useHabits.js", "startLine": 52, "endLine": 65, "anchor": "const toggleHabit = useCallback((id, dateKey = toDateKey()) => {", "note": "The immutable version." },
+      "options": [
+        "React may not re-render, because the array reference didn't change",
+        "The app would crash with a syntax error",
+        "AsyncStorage would reject the data",
+        "The habit would be deleted"
+      ],
+      "answerIndex": 0,
+      "explanation": "React decides whether to re-render by comparing references. Mutating the existing array keeps the same reference, so the UI can silently stay out of date.",
+      "conceptId": "immutability"
+    },
+    {
+      "id": "q3",
+      "question": "Why does TodayScreen use FlatList rather than `habits.map()` inside a ScrollView?",
+      "codeRef": { "file": "src/screens/TodayScreen.js", "startLine": 25, "endLine": 30, "anchor": "<FlatList", "note": "The list setup." },
+      "options": [
+        "ScrollView can't display Text components",
+        "FlatList only renders the rows on screen, so long lists stay fast",
+        "map() is not supported in React Native",
+        "FlatList automatically saves the list to storage"
+      ],
+      "answerIndex": 1,
+      "explanation": "A ScrollView renders every child up front. FlatList virtualises the list, drawing only what's visible, which matters as data grows.",
+      "conceptId": "flatlist"
+    },
+    {
+      "id": "q4",
+      "question": "What makes the habit name TextInput a *controlled* input?",
+      "codeRef": { "file": "src/screens/AddHabitScreen.js", "startLine": 49, "endLine": 54, "anchor": "<TextInput", "note": "The name input." },
+      "options": [
+        "It has a maxLength of 40",
+        "It uses returnKeyType=\"done\"",
+        "It sits inside a KeyboardAvoidingView",
+        "Its value comes from state and onChangeText updates that state"
+      ],
+      "answerIndex": 3,
+      "explanation": "Controlled means React state is the single source of truth: `value={name}` displays state and `onChangeText` updates it on every keystroke.",
+      "conceptId": "text-input"
+    },
+    {
+      "id": "q5",
+      "question": "calculateStreak starts counting from yesterday when today isn't checked yet. Why?",
+      "codeRef": { "file": "src/utils/dates.js", "startLine": 24, "endLine": 33, "anchor": "export function calculateStreak(completedDates) {", "note": "The streak algorithm." },
+      "options": [
+        "Because today's date key can't be calculated",
+        "To make streaks look bigger than they are",
+        "So an unfinished day doesn't break the streak before the day is over",
+        "Because a Set can't contain today's key"
+      ],
+      "answerIndex": 2,
+      "explanation": "At 9 am you haven't had a chance to do today's habit yet. Counting from yesterday keeps the streak alive until the day actually ends.",
+      "conceptId": "pure-functions"
+    }
+  ],
+  "challenges": [
+    {
+      "id": "c1",
+      "title": "Time-of-day greeting",
+      "difficulty": "easy",
+      "description": "Greet the user at the top of the Today screen with “Good morning”, “Good afternoon” or “Good evening”, depending on the current hour.",
+      "hints": [
+        "`new Date().getHours()` returns 0–23.",
+        "Write a small pure function `getGreeting(hour)` in src/utils/dates.js.",
+        "Render it in the FlatList header, above the date."
+      ],
+      "conceptIds": ["pure-functions", "conditional-rendering"],
+      "acceptanceCriteria": [
+        "The greeting changes with the time of day",
+        "The logic lives in a pure function, not inline in JSX"
+      ]
+    },
+    {
+      "id": "c2",
+      "title": "Edit an existing habit",
+      "difficulty": "medium",
+      "description": "Let users change a habit's name, emoji or colour. Long-press should offer Edit and Delete, and editing should reuse the Add Habit form, pre-filled.",
+      "hints": [
+        "Alert.alert accepts up to three buttons — add an “Edit” option.",
+        "Give AddHabitScreen an optional `initialHabit` prop and use it for the initial state values.",
+        "Add an `updateHabit(id, changes)` action to useHabits that returns a new array with `map`."
+      ],
+      "conceptIds": ["props", "use-state", "immutability"],
+      "acceptanceCriteria": [
+        "Editing keeps the habit's streak and history",
+        "The form title and button say “Edit habit” when editing",
+        "Changes are saved after closing and reopening the app"
+      ]
+    },
+    {
+      "id": "c3",
+      "title": "Weekly targets",
+      "difficulty": "hard",
+      "description": "Support habits that only need to happen a few times per week (e.g. “Gym — 3× a week”). Show weekly progress like “2 / 3 this week” instead of a daily streak for those habits.",
+      "hints": [
+        "Add an optional `timesPerWeek` field to the Habit model and a picker in the form.",
+        "Count completions since Monday with a new pure function in dates.js.",
+        "Old saved habits won't have the field — treat a missing value as a daily habit."
+      ],
+      "conceptIds": ["data-modeling", "pure-functions", "array-methods"],
+      "acceptanceCriteria": [
+        "Daily habits still show streaks",
+        "Weekly habits show progress toward their target",
+        "Existing saved data keeps working (no crash on old habits)"
+      ]
+    }
+  ],
+  "nextSteps": [
+    { "conceptId": "notifications", "reason": "Evening reminders were cut from v1 — expo-notifications is the natural next feature." },
+    { "conceptId": "testing", "reason": "calculateStreak is a pure function: a perfect first unit test with Jest." },
+    { "conceptId": "animations", "reason": "Animate the check-off and progress bar to make completing a habit feel rewarding." },
+    { "conceptId": "eas-build", "reason": "Turn HabitHero into a real APK you can install and use every day." }
+  ]
+}

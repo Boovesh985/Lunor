@@ -1,0 +1,222 @@
+{
+  "headline": "SplitMate taught you how real apps keep shared data correct: one source of truth, changes as actions, and exact money maths that you can test.",
+  "concepts": [
+    {
+      "conceptId": "data-modeling",
+      "explanation": "Two modelling decisions make SplitMate trustworthy. Money is stored as integer **paise**, so every sum is exact. Expenses and payments point to members by **id** (`paidBy: 'aarav'`), never by name or by a copy of the member, so there is exactly one place where a person is defined.",
+      "whyItMatters": "Fintech apps from UPI wallets to Splitwise store money in minor units — a rounding bug in a money app destroys trust instantly.",
+      "codeRefs": [
+        { "file": "src/utils/money.js", "startLine": 1, "endLine": 2, "anchor": "// Money helpers. Amounts are stored as whole paise (integers), never as", "note": "The one decision that makes every calculation exact." },
+        { "file": "src/data/sampleGroup.js", "startLine": 15, "endLine": 20, "anchor": "expenses: [", "note": "Expenses reference members by id, with amounts in paise." }
+      ],
+      "practiceTip": "In `src/data/sampleGroup.js` change the Wi-Fi amount from `99900` to `99901`, press **Reset app data** in the preview toolbar, and check that the balances still add up to exactly zero."
+    },
+    {
+      "conceptId": "pure-functions",
+      "explanation": "`computeBalances` and `suggestSettlements` take plain data and return plain data — no React, no storage, no side effects. That makes the hardest logic in the app the easiest to reason about: same input, same output, every time.",
+      "whyItMatters": "Pure business logic can be unit-tested in milliseconds and reused unchanged in a web app or a backend.",
+      "codeRefs": [
+        { "file": "src/utils/balances.js", "startLine": 7, "endLine": 28, "anchor": "export function computeBalances(members, expenses, settlements) {", "note": "Balances from history — nothing else." },
+        { "file": "src/utils/money.js", "startLine": 30, "endLine": 35, "anchor": "export function splitEvenly(total, count) {", "note": "Shares always add up to the total." }
+      ],
+      "practiceTip": "Temporarily change `add(expense.paidBy, expense.amount)` to `add(expense.paidBy, expense.amount / 2)` and watch the balances stop making sense. Then undo it."
+    },
+    {
+      "conceptId": "array-methods",
+      "explanation": "The app leans on `map`, `filter`, `reduce` and `sort` instead of manual loops. `reduce` totals the spending, `filter` + `map` + `sort` build the activity timeline, and `sort` with a comparator ranks debtors from largest to smallest.",
+      "whyItMatters": "These four methods cover most day-to-day data work in JavaScript and make intent obvious at a glance.",
+      "codeRefs": [
+        { "file": "src/screens/BalancesScreen.js", "startLine": 18, "endLine": 18, "anchor": "const totalSpent = expenses.reduce((sum, expense) => sum + expense.amount, 0);", "note": "reduce folds a list into one number." },
+        { "file": "src/screens/ActivityScreen.js", "startLine": 19, "endLine": 25, "anchor": "const items = useMemo(() => {", "note": "filter, map and sort build the timeline." },
+        { "file": "src/utils/balances.js", "startLine": 40, "endLine": 41, "anchor": "debtors.sort((a, b) => b.amount - a.amount);", "note": "A comparator puts the largest amounts first." }
+      ],
+      "practiceTip": "In `ActivityScreen.js`, swap `a` and `b` in the `localeCompare` sort to show the oldest items first."
+    },
+    {
+      "conceptId": "use-reducer",
+      "explanation": "Instead of six separate `useState` setters, every change to the group is an **action** handled by one reducer. Reading `groupReducer` tells you every way the data can change — add, delete, settle, add member, remove member — in one screenful.",
+      "whyItMatters": "Reducers scale to complex state and are the same pattern used by Redux, Zustand and many production apps.",
+      "codeRefs": [
+        { "file": "src/context/GroupContext.js", "startLine": 10, "endLine": 29, "anchor": "export function groupReducer(state, action) {", "note": "Every possible change, in one switch." },
+        { "file": "src/context/GroupContext.js", "startLine": 36, "endLine": 36, "anchor": "const [state, dispatch] = useReducer(groupReducer, { ...emptyGroup, isLoading: true });", "note": "useReducer gives you the state and a dispatch function." }
+      ],
+      "practiceTip": "Add a `renameGroup` case to the reducer and a matching action creator, then call it from the Roommates screen to rename “Room 204”."
+    },
+    {
+      "conceptId": "immutability",
+      "explanation": "The reducer never pushes into or splices the existing arrays. It builds new ones with spread syntax and `filter`, so React sees a new reference and re-renders. The form's `toggleMember` follows the same rule when it updates the selection.",
+      "whyItMatters": "Mutating state is one of the most common causes of “the screen didn't update” bugs in React apps.",
+      "codeRefs": [
+        { "file": "src/context/GroupContext.js", "startLine": 14, "endLine": 17, "anchor": "case 'addExpense':", "note": "New arrays, never push or splice." },
+        { "file": "src/screens/AddExpenseScreen.js", "startLine": 32, "endLine": 37, "anchor": "function toggleMember(id) {", "note": "The updater returns a fresh array." }
+      ],
+      "practiceTip": "Replace the `addExpense` case with `state.expenses.unshift(action.expense); return state;` and add an expense — it won't show up. Undo the change afterwards."
+    },
+    {
+      "conceptId": "context",
+      "explanation": "Four screens and a modal need the same data. Rather than passing it through App.js as props, `GroupProvider` makes it available to every component inside it, and screens read it with the `useGroup()` hook. That's why `BalancesScreen` receives no props at all.",
+      "whyItMatters": "Context removes prop drilling for app-wide data such as the signed-in user, theme or — here — the shared ledger.",
+      "codeRefs": [
+        { "file": "src/context/GroupContext.js", "startLine": 31, "endLine": 36, "anchor": "const GroupContext = createContext(null);", "note": "Create the context and its provider…" },
+        { "file": "App.js", "startLine": 24, "endLine": 29, "anchor": "<SafeAreaProvider>", "note": "…wrap the app once…" },
+        { "file": "src/context/GroupContext.js", "startLine": 89, "endLine": 93, "anchor": "export function useGroup() {", "note": "…and read it anywhere with a hook." }
+      ],
+      "practiceTip": "Call `useGroup()` inside `TabBar.js` and show the group name above the tabs — no new props needed."
+    },
+    {
+      "conceptId": "use-memo",
+      "explanation": "Balances are **derived data**: they're recalculated from expenses and payments, never stored, so they can't disagree with the history. `useMemo` caches the result and only recomputes when members, expenses or settlements change. The context value is memoised the same way.",
+      "whyItMatters": "Deriving instead of duplicating data removes a whole category of sync bugs, and memoising keeps it fast.",
+      "codeRefs": [
+        { "file": "src/context/GroupContext.js", "startLine": 97, "endLine": 103, "anchor": "export function useBalances() {", "note": "Recomputed only when the history changes." },
+        { "file": "src/context/GroupContext.js", "startLine": 85, "endLine": 85, "anchor": "const value = useMemo(() => ({ ...state, ...actions }), [state, actions]);", "note": "A stable context value avoids needless re-renders." }
+      ],
+      "practiceTip": "Add `console.log('recomputing balances')` inside the `useMemo` in `useBalances`, open Roommates and type a name. The screen re-renders on every keystroke, but the log only appears when a roommate is actually added."
+    },
+    {
+      "conceptId": "form-validation",
+      "explanation": "The Add-expense form computes its `errors` from the current values on every render instead of storing them, and only reveals them after the first save attempt. The Roommates screen uses guard clauses that return early with a helpful message.",
+      "whyItMatters": "Good validation prevents bad data from ever reaching your state — and good error messages tell people how to fix it.",
+      "codeRefs": [
+        { "file": "src/screens/AddExpenseScreen.js", "startLine": 20, "endLine": 27, "anchor": "// Validation is derived from state, so errors update as the user types.", "note": "Errors are computed, not stored." },
+        { "file": "src/screens/RoommatesScreen.js", "startLine": 18, "endLine": 31, "anchor": "function handleAdd() {", "note": "Guard clauses return early with a message." }
+      ],
+      "practiceTip": "Reject amounts above ₹1,00,000 with the message “That's a lot — double-check the amount”."
+    },
+    {
+      "conceptId": "async-storage",
+      "explanation": "The provider loads the saved ledger once, falls back to the sample room if nothing is saved (or the JSON is broken), and saves the whole group after every change. The `isLoading` guard stops the very first render from overwriting real data with the empty starting state.",
+      "whyItMatters": "Almost every app needs to remember things between launches; getting the load/save order right is what prevents data loss.",
+      "codeRefs": [
+        { "file": "src/context/GroupContext.js", "startLine": 41, "endLine": 50, "anchor": "async function load() {", "note": "Load, parse, and fall back safely." },
+        { "file": "src/context/GroupContext.js", "startLine": 58, "endLine": 64, "anchor": "useEffect(() => {", "note": "Save after every change — but only once loaded." }
+      ],
+      "practiceTip": "Add an expense and press the preview's reload button — it's still there. Then press **Reset app data**: the sample room comes back."
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "question": "Why does SplitMate store ₹249.75 as the integer `24975`?",
+      "codeRef": { "file": "src/utils/money.js", "startLine": 1, "endLine": 2, "anchor": "// Money helpers. Amounts are stored as whole paise (integers), never as", "note": "Why amounts are integers." },
+      "options": [
+        "It takes less space in AsyncStorage",
+        "Integers are exact, while decimals like 0.1 can't be represented exactly in JavaScript",
+        "AsyncStorage can only store whole numbers",
+        "Indian digit grouping requires integers"
+      ],
+      "answerIndex": 1,
+      "explanation": "JavaScript numbers are binary floating point, so `0.1 + 0.2` is `0.30000000000000004`. Integer paise add and split exactly. Storage size and formatting have nothing to do with it — AsyncStorage stores strings anyway.",
+      "conceptId": "data-modeling"
+    },
+    {
+      "id": "q2",
+      "question": "`splitEvenly(10000, 3)` returns `[3334, 3333, 3333]`. Why not three equal shares of `3333.33`?",
+      "codeRef": { "file": "src/utils/money.js", "startLine": 30, "endLine": 35, "anchor": "export function splitEvenly(total, count) {", "note": "How shares are calculated." },
+      "options": [
+        "Math.floor is faster than normal division",
+        "Arrays in JavaScript can't hold decimals",
+        "React Native can't render decimal numbers",
+        "Shares must be whole paise and must add up exactly to the total, so the leftover paisa goes to the first person"
+      ],
+      "answerIndex": 3,
+      "explanation": "Three shares of 3333.33 would add up to 9999.99 — a paisa would vanish and balances would no longer sum to zero. Giving the remainder to the first people keeps every share whole and the total exact.",
+      "conceptId": "pure-functions"
+    },
+    {
+      "id": "q3",
+      "question": "Why does the reducer return `{ ...state, expenses: [action.expense, ...state.expenses] }` instead of calling `state.expenses.unshift(action.expense)`?",
+      "codeRef": { "file": "src/context/GroupContext.js", "startLine": 14, "endLine": 15, "anchor": "case 'addExpense':", "note": "The addExpense case of the reducer." },
+      "options": [
+        "React compares references: a new object and array tell it the data changed, while mutating the old array can leave the screen stale",
+        "unshift doesn't exist on JavaScript arrays",
+        "Spread syntax is required inside switch statements",
+        "It sorts the expenses by date automatically"
+      ],
+      "answerIndex": 0,
+      "explanation": "Reducers must return new state. If you mutate the existing array and return the same `state` object, React sees an identical reference and may skip re-rendering. `unshift` exists — it's just the wrong tool here — and spread does no sorting.",
+      "conceptId": "immutability"
+    },
+    {
+      "id": "q4",
+      "question": "Balances are never saved to AsyncStorage. What happens to them when you delete an expense?",
+      "codeRef": { "file": "src/context/GroupContext.js", "startLine": 97, "endLine": 103, "anchor": "export function useBalances() {", "note": "Balances are derived with useMemo." },
+      "options": [
+        "They keep their old values until the app restarts",
+        "You need to tap a Recalculate button",
+        "useBalances recomputes them from the remaining history, because `expenses` — one of its dependencies — changed",
+        "The reducer subtracts the deleted expense from each balance"
+      ],
+      "answerIndex": 2,
+      "explanation": "Deleting creates a new `expenses` array, so the `useMemo` dependency list changes and balances are recalculated from scratch. Because they are derived, they can never disagree with the history.",
+      "conceptId": "use-memo"
+    },
+    {
+      "id": "q5",
+      "question": "Four roommates have non-zero balances. At most how many payments can `suggestSettlements` suggest?",
+      "codeRef": { "file": "src/utils/balances.js", "startLine": 43, "endLine": 55, "anchor": "const payments = [];", "note": "The greedy settle-up loop." },
+      "options": ["2", "3", "4", "6"],
+      "answerIndex": 1,
+      "explanation": "Each payment brings at least one person to exactly zero, and the final payment settles two people at once. So n people need at most n − 1 payments: 3 for four roommates. Paying everyone back pairwise could need up to 6.",
+      "conceptId": "pure-functions"
+    }
+  ],
+  "challenges": [
+    {
+      "id": "c1",
+      "title": "This month's spending",
+      "difficulty": "easy",
+      "description": "Add a line to the balance card showing how much the room has spent in the current calendar month.",
+      "hints": [
+        "Compare `new Date(expense.createdAt).getMonth()` and `getFullYear()` with today's.",
+        "Use `filter` and then `reduce` to total the matching amounts.",
+        "Format the result with `formatMoney`."
+      ],
+      "conceptIds": ["array-methods", "dates"],
+      "acceptanceCriteria": [
+        "Only expenses from the current month are counted",
+        "The total updates immediately after adding or deleting an expense"
+      ]
+    },
+    {
+      "id": "c2",
+      "title": "Edit an expense",
+      "difficulty": "medium",
+      "description": "Let people tap an expense in Activity to fix a typo or a wrong amount, reusing the Add-expense form.",
+      "hints": [
+        "Add an `updateExpense` case to the reducer that replaces one expense with `map`.",
+        "Give AddExpenseScreen an optional `initialExpense` prop and use it for the initial state of each field.",
+        "Keep the original `id` and `createdAt` when saving an edit."
+      ],
+      "conceptIds": ["use-reducer", "immutability", "form-validation"],
+      "acceptanceCriteria": [
+        "Tapping an expense opens the form pre-filled",
+        "Saving replaces the expense without changing its id or date",
+        "Balances update straight away"
+      ]
+    },
+    {
+      "id": "c3",
+      "title": "Unequal splits",
+      "difficulty": "hard",
+      "description": "Support splitting by exact amounts, e.g. one roommate only had ₹100 of a ₹1,240 grocery run.",
+      "hints": [
+        "Extend the Expense model with an optional `shares` object: `{ memberId: paise }`.",
+        "In computeBalances, use `expense.shares` when present and fall back to `splitEvenly` otherwise.",
+        "Validate that the custom shares add up exactly to the amount before enabling Save."
+      ],
+      "conceptIds": ["data-modeling", "pure-functions", "form-validation"],
+      "acceptanceCriteria": [
+        "Custom shares must add up to the total before the expense can be saved",
+        "Existing equal-split expenses still work unchanged",
+        "All balances still sum to exactly ₹0"
+      ]
+    }
+  ],
+  "nextSteps": [
+    { "conceptId": "testing", "reason": "computeBalances and suggestSettlements are pure functions — perfect first Jest tests, like “balances always sum to zero”." },
+    { "conceptId": "networking", "reason": "Syncing the ledger to a backend is what lets every roommate see the same balances on their own phone." },
+    { "conceptId": "auth", "reason": "Once data lives on a server, each roommate needs to sign in so only the room can see its money." },
+    { "conceptId": "notifications", "reason": "A gentle weekly reminder to people who owe money is the most requested feature in apps like this." }
+  ]
+}
