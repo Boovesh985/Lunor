@@ -293,6 +293,8 @@ export const useStudio = create<StudioState>()((set, get) => {
     close() {
       abortAll();
       const { project } = get();
+      // Saved right here, so a pending debounced save would only repeat it later.
+      clearTimeout(saveTimer);
       if (project) saveProject(project);
       set({ project: null, status: { ...IDLE }, errors: {}, partial: {}, liveThinking: {}, chatBusy: false, mentorOpen: false, focus: null });
     },

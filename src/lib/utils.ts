@@ -58,4 +58,12 @@ export const safeStorage = {
       /* ignore */
     }
   },
+  /** Removes everything this app stores (every key starts with "lunor:"). */
+  clearAll() {
+    try {
+      for (const key of Object.keys(localStorage)) if (key.startsWith('lunor:')) localStorage.removeItem(key);
+    } catch {
+      /* ignore */
+    }
+  },
 };

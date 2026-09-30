@@ -218,6 +218,7 @@ Other scripts:
 
 - **Sandboxed preview.** Generated code runs in a sandboxed iframe with an opaque origin. It can't read the Studio's storage, cookies or DOM, and it talks to the host only through a narrow `postMessage` protocol.
 - **Keys.** The server key never reaches the browser. A key a user pastes in Settings is kept in *their* `localStorage` and sent per request in a header. It's never stored or logged on the server.
+- **Local data.** Projects, XP and settings live only in the visitor's browser. **Settings → Delete all data** wipes all of it in one step.
 - **Input checks.** Every request is validated with Zod and size-capped, and per-IP rate limits protect the server keys.
 - **Gemini free tier.** Google's terms say free-tier content may be used to improve Google's products. On a deployment that runs on Gemini's free tier, visitors' ideas and code are sent to Google on those terms.
 - **Diagrams.** They're generated deterministically from the plan JSON, with every label escaped. The model never writes diagram syntax, and Mermaid runs with `securityLevel: "strict"`.

@@ -1,11 +1,24 @@
-import { CheckCircle2, Cpu, Eye, EyeOff, KeyRound, RotateCcw, ShieldCheck } from 'lucide-react';
+import { CheckCircle2, Cpu, Eye, EyeOff, KeyRound, RotateCcw, ShieldCheck, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { LEVELS, type Level } from '../../shared/levels.ts';
+import { navigate } from '../lib/router';
 import { useLiveAI, useServerConfig, useSettings } from '../lib/settings';
 import { useUI } from '../lib/uiState';
-import { cn } from '../lib/utils';
+import { cn, safeStorage } from '../lib/utils';
 import { useXP } from '../lib/xp';
 import { Badge, Button, Dialog } from './ui';
+
+/** Wipes every project, all XP and the settings (API key included) from this browser, then starts fresh. */
+async function deleteEverything() {
+  if (!confirm('Delete all your projects, XP and settings (including a saved API key) from this browser? This can’t be undone.')) return;
+  if (location.pathname !== '/') {
+    // Leave the open project first: the Studio saves it once as it closes, and that save must land before the wipe.
+    navigate('/');
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  safeStorage.clearAll();
+  location.replace('/');
+}
 
 export function SettingsDialog() {
   const open = useUI((s) => s.settingsOpen);
@@ -115,17 +128,22 @@ export function SettingsDialog() {
         </div>
       </section>
 
-      <section className="mt-6 flex items-center justify-between border-t border-line pt-4">
+      <section className="mt-6 flex flex-wrap items-center justify-between gap-2 border-t border-line pt-4">
         <span className="text-xs text-muted">Progress and projects are saved locally in this browser.</span>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => {
-            if (confirm('Reset your XP and level?')) resetXP();
-          }}
-        >
-          <RotateCcw className="size-3.5" /> Reset XP
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              if (confirm('Reset your XP and level?')) resetXP();
+            }}
+          >
+            <RotateCcw className="size-3.5" /> Reset XP
+          </Button>
+          <Button variant="danger" size="sm" onClick={() => void deleteEverything()}>
+            <Trash2 className="size-3.5" /> Delete all data
+          </Button>
+        </div>
       </section>
     </Dialog>
   );
