@@ -19,7 +19,9 @@ export function navigate(to: string, options: { replace?: boolean } = {}) {
     else history.pushState(null, '', to);
     listeners.forEach((listener) => listener());
   }
-  window.scrollTo(0, 0);
+  // A "#section" target is scrolled into view by the page that owns it (see Landing);
+  // scrolling to the top here would cancel that.
+  if (!to.includes('#')) window.scrollTo(0, 0);
 }
 
 export function usePathname() {
