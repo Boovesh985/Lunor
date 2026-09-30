@@ -13,7 +13,7 @@
  */
 import Anthropic from '@anthropic-ai/sdk';
 import type { BetaJSONOutputFormat, BetaMessageParam } from '@anthropic-ai/sdk/resources/beta/messages/messages';
-import type { StreamEvent } from '../shared/schemas.ts';
+import type { StreamEvent } from '../shared/schemas.js';
 
 export const DEFAULT_MODEL = 'claude-opus-5-5';
 

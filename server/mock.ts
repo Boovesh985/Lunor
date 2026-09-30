@@ -6,9 +6,9 @@
  */
 import { readdir, readFile } from 'node:fs/promises';
 import { join, relative, resolve } from 'node:path';
-import { toFileBlocks } from '../shared/fileProtocol.ts';
-import type { StreamEvent } from '../shared/schemas.ts';
-import type { StageName } from './stages.ts';
+import { toFileBlocks } from '../shared/fileProtocol.js';
+import type { StreamEvent } from '../shared/schemas.js';
+import type { StageName } from './stages.js';
 
 export function isMockMode(): boolean {
   return process.env.LUNOR_MOCK_AI === '1';

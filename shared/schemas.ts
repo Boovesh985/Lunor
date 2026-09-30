@@ -10,7 +10,7 @@
  * schema transform turns some constraints into descriptions.
  */
 import { z } from 'zod';
-import { LEVELS, type Level } from './levels.ts';
+import { LEVELS, type Level } from './levels.js';
 
 export { LEVELS, type Level };
 export const LevelSchema = z.enum(LEVELS);
