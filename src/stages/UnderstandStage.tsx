@@ -86,6 +86,7 @@ function Features({ u, excluded, onToggle, interactive }: { u: U; excluded: stri
                       key={feature.id ?? feature.name}
                       type="button"
                       disabled={!interactive}
+                      aria-pressed={!off}
                       onClick={() => feature.id && onToggle(feature.id)}
                       className={cn(
                         'flex w-full items-start gap-2.5 rounded-lg border border-transparent p-2 text-left transition-colors',
@@ -135,6 +136,7 @@ function Questions({ u, decisions, onChoose, interactive }: { u: U; decisions: R
                     key={i}
                     type="button"
                     disabled={!interactive}
+                    aria-pressed={chosen === i}
                     onClick={() => q.id && onChoose(q.id, i)}
                     className={cn(
                       'flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left text-sm transition-colors',

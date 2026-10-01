@@ -525,6 +525,7 @@ export default function BuildStage() {
             <button
               key={p}
               type="button"
+              aria-pressed={platform === p}
               onClick={() => setPlatform(p)}
               className={cn('rounded-md px-2.5 py-1 text-xs', platform === p ? 'bg-elevated text-fg' : 'text-muted hover:text-soft')}
             >
