@@ -31,6 +31,7 @@ export function ThinkingPanel({ text = '', active, label = 'Lunor AI is thinking
     <div className={cn('overflow-hidden rounded-card border border-line bg-panel', className)}>
       <button
         type="button"
+        aria-expanded={expanded}
         onClick={() => !active && setOpen((o) => !o)}
         className={cn('flex w-full items-center gap-2.5 px-4 py-3 text-left text-sm', !active && 'hover:bg-white/[0.02]')}
       >
